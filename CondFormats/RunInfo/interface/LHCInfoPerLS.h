@@ -15,9 +15,11 @@ public:
     ISIZE = 1
   };
   enum FloatParamIndex {
-    CROSSING_ANGLE = 0,
-    BETA_STAR = 1,
-    FSIZE = 2
+    CROSSING_ANGLE_X = 0,
+    CROSSING_ANGLE_Y = 1,
+    BETA_STAR_X = 2,
+    BETA_STAR_Y = 3,
+    FSIZE = 4
   };
 
   LHCInfoPerLS();
@@ -25,22 +27,32 @@ public:
   ~LHCInfoPerLS();
 
   //getters
-  float const crossingAngle() const;
+  float const crossingAngleX() const;
 
-  float const betaStar() const;
+  float const crossingAngleY() const;
+
+  float const betaStarX() const;
+
+  float const betaStarY() const;
 
   unsigned int const& lumiSection() const;
 
   //setters
-  void setCrossingAngle(float const& angle);
+  void setCrossingAngleX(float const& angle);
 
-  void setBetaStar(float const& betaStar);
+  void setCrossingAngleY(float const& angle);
+
+  void setBetaStarX(float const& betaStar);
+
+  void setBetaStarY(float const& betaStar);
 
   void setLumiSection(unsigned int const& lumiSection);
 
   //sets all values in one go
-  void setInfo(float const& angle,
-               float const& beta,
+  void setInfo(float const& angleX,
+               float const& angleY,
+               float const& betaX,
+               float const& betaY,
                unsigned int const& lumiSection);
 
   bool equals(const LHCInfoPerLS& rhs) const;

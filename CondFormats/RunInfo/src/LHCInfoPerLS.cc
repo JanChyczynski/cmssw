@@ -59,33 +59,47 @@ namespace LHCInfoPerLSImpl {
 }  // namespace LHCInfoPerLSImpl
 
 //getters
-float const LHCInfoPerLS::crossingAngle() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, CROSSING_ANGLE); }
+float const LHCInfoPerLS::crossingAngleX() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, CROSSING_ANGLE_X); }
 
-float const LHCInfoPerLS::betaStar() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, BETA_STAR); }
+float const LHCInfoPerLS::crossingAngleY() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, CROSSING_ANGLE_Y); }
+
+float const LHCInfoPerLS::betaStarX() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, BETA_STAR_X); }
+
+float const LHCInfoPerLS::betaStarY() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, BETA_STAR_Y); }
 
 unsigned int const& LHCInfoPerLS::lumiSection() const { return LHCInfoPerLSImpl::getOneParam(m_intParams, LUMI_SECTION); }
 
 //setters
-void LHCInfoPerLS::setCrossingAngle(float const& angle) { LHCInfoPerLSImpl::setOneParam(m_floatParams, CROSSING_ANGLE, angle); }
+void LHCInfoPerLS::setCrossingAngleX(float const& angle) { LHCInfoPerLSImpl::setOneParam(m_floatParams, CROSSING_ANGLE_X, angle); }
 
-void LHCInfoPerLS::setBetaStar(float const& betaStar) { LHCInfoPerLSImpl::setOneParam(m_floatParams, BETA_STAR, betaStar); }
+void LHCInfoPerLS::setCrossingAngleY(float const& angle) { LHCInfoPerLSImpl::setOneParam(m_floatParams, CROSSING_ANGLE_Y, angle); }
+
+void LHCInfoPerLS::setBetaStarX(float const& betaStar) { LHCInfoPerLSImpl::setOneParam(m_floatParams, BETA_STAR_X, betaStar); }
+
+void LHCInfoPerLS::setBetaStarY(float const& betaStar) { LHCInfoPerLSImpl::setOneParam(m_floatParams, BETA_STAR_Y, betaStar); }
 
 void LHCInfoPerLS::setLumiSection(unsigned int const& lumiSection) {
   LHCInfoPerLSImpl::setOneParam(m_intParams, LUMI_SECTION, lumiSection);
 }
 
 //sets all values in one go
-void LHCInfoPerLS::setInfo(float const& angle,
-                      float const& beta,
+void LHCInfoPerLS::setInfo(float const& angleX,
+                      float const& angleY,
+                      float const& betaX,
+                      float const& betaY,
                       unsigned int const& lumiSection) {
-  this->setCrossingAngle(angle);
-  this->setBetaStar(beta);
+  this->setCrossingAngleX(angleX);
+  this->setCrossingAngleY(angleY);
+  this->setBetaStarX(betaX);
+  this->setBetaStarY(betaY);
   this->setLumiSection(lumiSection);
 }
 
 void LHCInfoPerLS::print(std::stringstream& ss) const {
-  ss << "Crossing angle (urad): " << this->crossingAngle() << std::endl
-     << "Beta star (cm): " << this->betaStar() << std::endl
+  ss << "Crossing angle x (urad): " << this->crossingAngleX() << std::endl
+     << "Crossing angle y (urad): " << this->crossingAngleY() << std::endl
+     << "Beta star x (cm): " << this->betaStarX() << std::endl
+     << "Beta star y (cm): " << this->betaStarY() << std::endl
      << "Lumi section: " << this->lumiSection() << std::endl;
 }
 
