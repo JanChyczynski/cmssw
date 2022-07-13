@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 // Package:     DataRecord
-// Class  :     LHCInfoForPPSRcd
+// Class  :     LHCInfoPerLSRcd
 //
 // Implementation:
 //     [Notes on implementation]
@@ -10,7 +10,7 @@
 // Created:     Tue Feb 15 2022
 // $Id$
 
-#include "CondFormats/DataRecord/interface/LHCInfoForPPSRcd.h"
+#include "CondFormats/DataRecord/interface/LHCInfoPerLSRcd.h"
 #include "FWCore/Framework/interface/eventsetuprecord_registration_macro.h"
 
-EVENTSETUP_RECORD_REG(LHCInfoForPPSRcd);
+EVENTSETUP_RECORD_REG(LHCInfoPerLSRcd);

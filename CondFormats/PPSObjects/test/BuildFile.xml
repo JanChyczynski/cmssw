@@ -22,6 +22,6 @@
   <use name="CondFormats/PPSObjects"/>
 </bin>
 
-<bin file="testSerializationLHCInfoForPPS.cc">
+<bin file="testSerializationLHCInfoPerLS.cc">
   <use name="CondFormats/PPSObjects"/>
 </bin>

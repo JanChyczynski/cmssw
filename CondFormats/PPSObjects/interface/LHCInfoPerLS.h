@@ -1,5 +1,5 @@
-#ifndef CondFormats_PPSObjects_LHCInfoForPPS_H
-#define CondFormats_PPSObjects_LHCInfoForPPS_H
+#ifndef CondFormats_PPSObjects_LHCInfoPerLS_H
+#define CondFormats_PPSObjects_LHCInfoPerLS_H
 
 #include "CondFormats/Serialization/interface/Serializable.h"
 #include <bitset>
@@ -8,7 +8,7 @@
 #include <sstream>
 #include <vector>
 
-class LHCInfoForPPS {
+class LHCInfoPerLS {
 public:
   enum IntParamIndex {
     LUMI_SECTION = 0,
@@ -20,9 +20,9 @@ public:
     FSIZE = 2
   };
 
-  LHCInfoForPPS();
-  LHCInfoForPPS(const LHCInfoForPPS& rhs);
-  ~LHCInfoForPPS();
+  LHCInfoPerLS();
+  LHCInfoPerLS(const LHCInfoPerLS& rhs);
+  ~LHCInfoPerLS();
 
   //getters
   float const crossingAngle() const;
@@ -43,7 +43,7 @@ public:
                float const& beta,
                unsigned int const& lumiSection);
 
-  bool equals(const LHCInfoForPPS& rhs) const;
+  bool equals(const LHCInfoPerLS& rhs) const;
 
   bool empty() const;
 
@@ -58,6 +58,6 @@ private:
   COND_SERIALIZABLE;
 };
 
-std::ostream& operator<<(std::ostream&, LHCInfoForPPS lhcInfo);
+std::ostream& operator<<(std::ostream&, LHCInfoPerLS lhcInfo);
 
-#endif  // CondFormats_PPSObjects_LHCInfoForPPS_H
+#endif  // CondFormats_PPSObjects_LHCInfoPerLS_H

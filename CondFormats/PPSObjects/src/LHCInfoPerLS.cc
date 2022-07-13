@@ -1,22 +1,22 @@
-#include "CondFormats/PPSObjects/interface/LHCInfoForPPS.h"
+#include "CondFormats/PPSObjects/interface/LHCInfoPerLS.h"
 //#include "CondFormats/Common/interface/TimeConversions.h"
 #include <algorithm>
 #include <iterator>
 #include <vector>
 #include <stdexcept>
 
-LHCInfoForPPS::LHCInfoForPPS() {
+LHCInfoPerLS::LHCInfoPerLS() {
   m_intParams.resize(ISIZE, std::vector<unsigned int>(1, 0));
   m_floatParams.resize(FSIZE, std::vector<float>(1, 0.));
 }
 
-LHCInfoForPPS::LHCInfoForPPS(const LHCInfoForPPS& rhs)
+LHCInfoPerLS::LHCInfoPerLS(const LHCInfoPerLS& rhs)
     : m_intParams(rhs.m_intParams),
       m_floatParams(rhs.m_floatParams) {}
 
-LHCInfoForPPS::~LHCInfoForPPS() {}
+LHCInfoPerLS::~LHCInfoPerLS() {}
 
-namespace LHCInfoForPPSImpl {
+namespace LHCInfoPerLSImpl {
   template <typename T>
   const T& getParams(const std::vector<T>& params, size_t index) {
     if (index >= params.size())
@@ -56,26 +56,26 @@ namespace LHCInfoForPPSImpl {
     params[index] = value;
   }
 
-}  // namespace LHCInfoForPPSImpl
+}  // namespace LHCInfoPerLSImpl
 
 //getters
-float const LHCInfoForPPS::crossingAngle() const { return LHCInfoForPPSImpl::getOneParam(m_floatParams, CROSSING_ANGLE); }
+float const LHCInfoPerLS::crossingAngle() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, CROSSING_ANGLE); }
 
-float const LHCInfoForPPS::betaStar() const { return LHCInfoForPPSImpl::getOneParam(m_floatParams, BETA_STAR); }
+float const LHCInfoPerLS::betaStar() const { return LHCInfoPerLSImpl::getOneParam(m_floatParams, BETA_STAR); }
 
-unsigned int const& LHCInfoForPPS::lumiSection() const { return LHCInfoForPPSImpl::getOneParam(m_intParams, LUMI_SECTION); }
+unsigned int const& LHCInfoPerLS::lumiSection() const { return LHCInfoPerLSImpl::getOneParam(m_intParams, LUMI_SECTION); }
 
 //setters
-void LHCInfoForPPS::setCrossingAngle(float const& angle) { LHCInfoForPPSImpl::setOneParam(m_floatParams, CROSSING_ANGLE, angle); }
+void LHCInfoPerLS::setCrossingAngle(float const& angle) { LHCInfoPerLSImpl::setOneParam(m_floatParams, CROSSING_ANGLE, angle); }
 
-void LHCInfoForPPS::setBetaStar(float const& betaStar) { LHCInfoForPPSImpl::setOneParam(m_floatParams, BETA_STAR, betaStar); }
+void LHCInfoPerLS::setBetaStar(float const& betaStar) { LHCInfoPerLSImpl::setOneParam(m_floatParams, BETA_STAR, betaStar); }
 
-void LHCInfoForPPS::setLumiSection(unsigned int const& lumiSection) {
-  LHCInfoForPPSImpl::setOneParam(m_intParams, LUMI_SECTION, lumiSection);
+void LHCInfoPerLS::setLumiSection(unsigned int const& lumiSection) {
+  LHCInfoPerLSImpl::setOneParam(m_intParams, LUMI_SECTION, lumiSection);
 }
 
 //sets all values in one go
-void LHCInfoForPPS::setInfo(float const& angle,
+void LHCInfoPerLS::setInfo(float const& angle,
                       float const& beta,
                       unsigned int const& lumiSection) {
   this->setCrossingAngle(angle);
@@ -83,20 +83,20 @@ void LHCInfoForPPS::setInfo(float const& angle,
   this->setLumiSection(lumiSection);
 }
 
-void LHCInfoForPPS::print(std::stringstream& ss) const {
+void LHCInfoPerLS::print(std::stringstream& ss) const {
   ss << "Crossing angle (urad): " << this->crossingAngle() << std::endl
      << "Beta star (cm): " << this->betaStar() << std::endl
      << "Lumi section: " << this->lumiSection() << std::endl;
 }
 
-std::ostream& operator<<(std::ostream& os, LHCInfoForPPS beamInfo) {
+std::ostream& operator<<(std::ostream& os, LHCInfoPerLS beamInfo) {
   std::stringstream ss;
   beamInfo.print(ss);
   os << ss.str();
   return os;
 }
 
-bool LHCInfoForPPS::equals(const LHCInfoForPPS& rhs) const {
+bool LHCInfoPerLS::equals(const LHCInfoPerLS& rhs) const {
   if (m_isData != rhs.m_isData)
     return false;
   if (m_intParams != rhs.m_intParams)
@@ -106,4 +106,4 @@ bool LHCInfoForPPS::equals(const LHCInfoForPPS& rhs) const {
   return true;
 }
 
-bool LHCInfoForPPS::empty() const { return m_intParams[0].empty(); }
+bool LHCInfoPerLS::empty() const { return m_intParams[0].empty(); }

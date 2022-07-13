@@ -27,8 +27,8 @@
 #include "CondFormats/DataRecord/interface/PPSAlignmentConfigurationRcd.h"
 #include "CondFormats/PPSObjects/interface/PPSAssociationCuts.h"
 #include "CondFormats/DataRecord/interface/PPSAssociationCutsRcd.h"
-#include "CondFormats/PPSObjects/interface/LHCInfoForPPS.h"
-#include "CondFormats/DataRecord/interface/LHCInfoForPPSRcd.h"
+#include "CondFormats/PPSObjects/interface/LHCInfoPerLS.h"
+#include "CondFormats/DataRecord/interface/LHCInfoPerLSRcd.h"
 
 namespace {
   struct InitAssociationCuts {
@@ -50,6 +50,6 @@ REGISTER_PLUGIN(PPSDirectSimulationDataRcd, PPSDirectSimulationData);
 REGISTER_PLUGIN(PPSPixelTopologyRcd, PPSPixelTopology);
 REGISTER_PLUGIN(PPSAlignmentConfigRcd, PPSAlignmentConfig);
 REGISTER_PLUGIN(PPSAlignmentConfigurationRcd, PPSAlignmentConfiguration);
-REGISTER_PLUGIN(LHCInfoForPPSRcd, LHCInfoForPPS);
+REGISTER_PLUGIN(LHCInfoPerLSRcd, LHCInfoPerLS);
 
 REGISTER_PLUGIN_INIT(PPSAssociationCutsRcd, PPSAssociationCuts, InitAssociationCuts);

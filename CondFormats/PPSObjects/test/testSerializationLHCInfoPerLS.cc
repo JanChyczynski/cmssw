@@ -2,7 +2,7 @@
 #include "CondFormats/PPSObjects/src/headers.h"
 
 int main() {
-  testSerialization<LHCInfoForPPS>();
+  testSerialization<LHCInfoPerLS>();
 
   return 0;
 }
