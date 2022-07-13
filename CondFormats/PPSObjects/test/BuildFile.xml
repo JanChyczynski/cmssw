@@ -21,7 +21,3 @@
 <bin file="testSerializationPPSAssociationCuts.cc">
   <use name="CondFormats/PPSObjects"/>
 </bin>
-
-<bin file="testSerializationLHCInfoPerLS.cc">
-  <use name="CondFormats/PPSObjects"/>
-</bin>

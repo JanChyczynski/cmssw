@@ -1,4 +1,4 @@
-#include "CondFormats/PPSObjects/interface/LHCInfoPerLS.h"
+#include "CondFormats/RunInfo/interface/LHCInfoPerLS.h"
 //#include "CondFormats/Common/interface/TimeConversions.h"
 #include <algorithm>
 #include <iterator>

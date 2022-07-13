@@ -1,5 +1,5 @@
-#ifndef CondFormats_PPSObjects_LHCInfoPerLS_H
-#define CondFormats_PPSObjects_LHCInfoPerLS_H
+#ifndef CondFormats_RunInfo_LHCInfoPerLS_H
+#define CondFormats_RunInfo_LHCInfoPerLS_H
 
 #include "CondFormats/Serialization/interface/Serializable.h"
 #include <bitset>
@@ -60,4 +60,4 @@ private:
 
 std::ostream& operator<<(std::ostream&, LHCInfoPerLS lhcInfo);
 
-#endif  // CondFormats_PPSObjects_LHCInfoPerLS_H
+#endif  // CondFormats_RunInfo_LHCInfoPerLS_H

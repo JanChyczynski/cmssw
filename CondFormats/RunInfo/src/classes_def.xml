@@ -22,4 +22,6 @@
    <field name="m_bunchConfiguration1" mapping="blob"/>
    <field name="m_bunchConfiguration2" mapping="blob"/>
  </class>  
+
+ <class name="LHCInfoPerLS" class_version="0"/>
 </lcgdict>  
