@@ -12,6 +12,8 @@
 #include "CondFormats/RunInfo/interface/LHCInfo.h"
 #include "CondFormats/DataRecord/interface/LHCInfoPerLSRcd.h"
 #include "CondFormats/RunInfo/interface/LHCInfoPerLS.h"
+#include "CondFormats/DataRecord/interface/LHCInfoPerFillRcd.h"
+#include "CondFormats/RunInfo/interface/LHCInfoPerFill.h"
 
 REGISTER_PLUGIN(RunSummaryRcd, RunSummary);
 REGISTER_PLUGIN(RunInfoRcd, RunInfo);
@@ -20,3 +22,4 @@ REGISTER_PLUGIN(MixingRcd, MixingModuleConfig);
 REGISTER_PLUGIN(FillInfoRcd, FillInfo);
 REGISTER_PLUGIN(LHCInfoRcd, LHCInfo);
 REGISTER_PLUGIN(LHCInfoPerLSRcd, LHCInfoPerLS);
+REGISTER_PLUGIN(LHCInfoPerFillRcd, LHCInfoPerFill);
