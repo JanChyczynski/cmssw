@@ -7,6 +7,7 @@ int main() {
   testSerialization<LHCInfo>();
   testSerialization<LHCInfoPerLS>();
   testSerialization<LHCInfoPerFill>();
+  testSerialization<LHCInfoVectorizedFields>();
   testSerialization<L1TriggerScaler>();
   testSerialization<L1TriggerScaler::Lumi>();
   testSerialization<MixingInputConfig>();

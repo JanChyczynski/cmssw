@@ -2,13 +2,14 @@
 #define CondFormats_RunInfo_LHCInfoPerLS_H
 
 #include "CondFormats/Serialization/interface/Serializable.h"
+#include "CondFormats/RunInfo/interface/LHCInfoVectorizedFields.h"
 #include <bitset>
 #include <iostream>
 #include <string>
 #include <sstream>
 #include <vector>
 
-class LHCInfoPerLS {
+class LHCInfoPerLS : public LHCInfoVectorizedFields {
 public:
   enum IntParamIndex {
     LUMI_SECTION = 0,

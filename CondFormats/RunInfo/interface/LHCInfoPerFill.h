@@ -2,6 +2,7 @@
 #define CondFormats_RunInfo_LHCInfoPerFill_H
 
 #include "CondFormats/Serialization/interface/Serializable.h"
+#include "CondFormats/RunInfo/interface/LHCInfoVectorizedFields.h"
 #include "CondFormats/Common/interface/Time.h"
 #include <bitset>
 #include <iostream>
@@ -9,7 +10,7 @@
 #include <sstream>
 #include <vector>
 
-class LHCInfoPerFill {
+class LHCInfoPerFill : public LHCInfoVectorizedFields {
 public:
   enum FillType { UNKNOWN = 0, PROTONS = 1, IONS = 2, COSMICS = 3, GAP = 4 };
   enum ParticleType { NONE = 0, PROTON = 1, PB82 = 2, AR18 = 3, D = 4, XE54 = 5 };

@@ -26,4 +26,6 @@
  <class name="LHCInfoPerLS" class_version="0"/>
 
  <class name="LHCInfoPerFill" class_version="0"/>
+
+ <class name="LHCInfoVectorizedFields" class_version="0"/>
 </lcgdict>  
