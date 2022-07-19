@@ -1,4 +1,5 @@
 #include "CondFormats/RunInfo/interface/LHCInfoVectorizedFields.h"
+#include "CondCore/CondDB/interface/Exception.h"
 
 LHCInfoVectorizedFields::LHCInfoVectorizedFields() 
     : LHCInfoVectorizedFields(ISIZE, FSIZE, TSIZE, SSIZE) {}
@@ -13,7 +14,7 @@ LHCInfoVectorizedFields::LHCInfoVectorizedFields(size_t iSize, size_t fSize, siz
 template <typename T>
 const T& LHCInfoVectorizedFields::getParams(const std::vector<T>& params, size_t index) {
 if (index >= params.size())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " is out of range.");
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " is out of range.");
 return params[index];
 }
 
@@ -25,7 +26,7 @@ template const std::vector<std::string>& LHCInfoVectorizedFields::getParams(cons
 template <typename T>
 T& LHCInfoVectorizedFields::accessParams(std::vector<T>& params, size_t index) {
 if (index >= params.size())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " is out of range.");
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " is out of range.");
 return params[index];
 }
 
@@ -37,10 +38,10 @@ template std::vector<std::string>& LHCInfoVectorizedFields::accessParams(std::ve
 template <typename T>
 const T& LHCInfoVectorizedFields::getOneParam(const std::vector<std::vector<T> >& params, size_t index) {
 if (index >= params.size())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " is out of range.");
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " is out of range.");
 const std::vector<T>& inner = params[index];
 if (inner.empty())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " type=" + typeid(T).name() +
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " type=" + typeid(T).name() +
                             " has no value stored.");
 return inner[0];
 }
@@ -53,7 +54,7 @@ template const std::string& LHCInfoVectorizedFields::getOneParam(const std::vect
 template <typename T>
 void LHCInfoVectorizedFields::setOneParam(std::vector<std::vector<T> >& params, size_t index, const T& value) {
 if (index >= params.size())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " is out of range.");
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " is out of range.");
 params[index] = std::vector<T>(1, value);
 }
 
@@ -65,7 +66,7 @@ template void LHCInfoVectorizedFields::setOneParam(std::vector<std::vector<std::
 template <typename T>
 void LHCInfoVectorizedFields::setParams(std::vector<T>& params, size_t index, const T& value) {
 if (index >= params.size())
-    throw std::out_of_range("Parameter with index " + std::to_string(index) + " is out of range.");
+    throw cond::Exception("Parameter with index " + std::to_string(index) + " is out of range.");
 params[index] = value;
 }
 
