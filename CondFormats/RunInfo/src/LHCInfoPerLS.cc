@@ -5,16 +5,8 @@
 #include <vector>
 #include <stdexcept>
 
-LHCInfoPerLS::LHCInfoPerLS() {
-  m_intParams.resize(ISIZE, std::vector<unsigned int>(1, 0));
-  m_floatParams.resize(FSIZE, std::vector<float>(1, 0.));
-}
-
-LHCInfoPerLS::LHCInfoPerLS(const LHCInfoPerLS& rhs)
-    : m_intParams(rhs.m_intParams),
-      m_floatParams(rhs.m_floatParams) {}
-
-LHCInfoPerLS::~LHCInfoPerLS() {}
+LHCInfoPerLS::LHCInfoPerLS() 
+    : LHCInfoVectorizedFields (ISIZE, FSIZE, TSIZE, SSIZE) {}
 
 //getters
 float const LHCInfoPerLS::crossingAngleX() const { return LHCInfoPerLS::getOneParam(m_floatParams, CROSSING_ANGLE_X); }

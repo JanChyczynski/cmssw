@@ -24,8 +24,6 @@ public:
   };
 
   LHCInfoPerLS();
-  LHCInfoPerLS(const LHCInfoPerLS& rhs);
-  ~LHCInfoPerLS();
 
   //getters
   float const crossingAngleX() const;
@@ -62,11 +60,6 @@ public:
 
   //dumping values on output stream
   void print(std::stringstream& ss) const;
-
-private:
-  bool m_isData = false;
-  std::vector<std::vector<unsigned int> > m_intParams;
-  std::vector<std::vector<float> > m_floatParams;
 
   COND_SERIALIZABLE;
 };

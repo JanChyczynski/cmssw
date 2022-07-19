@@ -70,28 +70,15 @@ static std::string particleTypeToString(LHCInfoPerFill::ParticleTypeId const& pa
   return s_particleType;
 }
 
-LHCInfoPerFill::LHCInfoPerFill() {
-  m_intParams.resize(ISIZE, std::vector<unsigned int>(1, 0));
-  m_floatParams.resize(FSIZE, std::vector<float>(1, 0.));
+LHCInfoPerFill::LHCInfoPerFill() 
+    : LHCInfoVectorizedFields (ISIZE, FSIZE, TSIZE, SSIZE) {
   m_floatParams[LUMI_PER_B] = std::vector<float>();
   m_floatParams[BEAM1_VC] = std::vector<float>();
   m_floatParams[BEAM2_VC] = std::vector<float>();
   m_floatParams[BEAM1_RF] = std::vector<float>();
   m_floatParams[BEAM2_RF] = std::vector<float>();
-  m_timeParams.resize(TSIZE, std::vector<unsigned long long>(1, 0ULL));
-  m_stringParams.resize(SSIZE, std::vector<std::string>(1, ""));
   m_stringParams[INJECTION_SCHEME].push_back(std::string("None"));
 }
-
-LHCInfoPerFill::LHCInfoPerFill(const LHCInfoPerFill& rhs)
-    : m_intParams(rhs.m_intParams),
-      m_floatParams(rhs.m_floatParams),
-      m_timeParams(rhs.m_timeParams),
-      m_stringParams(rhs.m_stringParams),
-      m_bunchConfiguration1(rhs.m_bunchConfiguration1),
-      m_bunchConfiguration2(rhs.m_bunchConfiguration2) {}
-
-LHCInfoPerFill::~LHCInfoPerFill() {}
 
 LHCInfoPerFill* LHCInfoPerFill::cloneFill() const {
   LHCInfoPerFill* ret = new LHCInfoPerFill();

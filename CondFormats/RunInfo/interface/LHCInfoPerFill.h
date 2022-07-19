@@ -47,8 +47,6 @@ public:
   typedef FillType FillTypeId;
   typedef ParticleType ParticleTypeId;
   LHCInfoPerFill();
-  LHCInfoPerFill(const LHCInfoPerFill& rhs);
-  ~LHCInfoPerFill();
 
   LHCInfoPerFill* cloneFill() const;
 
@@ -236,11 +234,6 @@ public:
   void setBunchBitsetForBeam2(std::bitset<bunchSlots + 1> const& bunchConfiguration);
 
 private:
-  bool m_isData = false;
-  std::vector<std::vector<unsigned int> > m_intParams;
-  std::vector<std::vector<float> > m_floatParams;
-  std::vector<std::vector<unsigned long long> > m_timeParams;
-  std::vector<std::vector<std::string> > m_stringParams;
   std::bitset<bunchSlots + 1> m_bunchConfiguration1, m_bunchConfiguration2;
 
   COND_SERIALIZABLE;
