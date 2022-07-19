@@ -13,14 +13,14 @@ class LHCInfoPerLS : public LHCInfoVectorizedFields {
 public:
   enum IntParamIndex {
     LUMI_SECTION = 0,
-    ISIZE = 1
+    ISIZE
   };
   enum FloatParamIndex {
     CROSSING_ANGLE_X = 0,
-    CROSSING_ANGLE_Y = 1,
-    BETA_STAR_X = 2,
-    BETA_STAR_Y = 3,
-    FSIZE = 4
+    CROSSING_ANGLE_Y,
+    BETA_STAR_X,
+    BETA_STAR_Y,
+    FSIZE
   };
 
   LHCInfoPerLS();

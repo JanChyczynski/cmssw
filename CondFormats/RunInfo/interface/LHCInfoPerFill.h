@@ -12,37 +12,48 @@
 
 class LHCInfoPerFill : public LHCInfoVectorizedFields {
 public:
-  enum FillType { UNKNOWN = 0, PROTONS = 1, IONS = 2, COSMICS = 3, GAP = 4 };
-  enum ParticleType { NONE = 0, PROTON = 1, PB82 = 2, AR18 = 3, D = 4, XE54 = 5 };
+  enum FillType { UNKNOWN = 0, PROTONS, IONS, COSMICS, GAP };
+  enum ParticleType { NONE = 0, PROTON, PB82, AR18, D, XE54 };
 
   enum IntParamIndex {
     LHC_FILL = 0,
-    BUNCHES_1 = 1,
-    BUNCHES_2 = 2,
-    COLLIDING_BUNCHES = 3,
-    TARGET_BUNCHES = 4,
-    FILL_TYPE = 5,
-    PARTICLES_1 = 6,
-    PARTICLES_2 = 7,
-    ISIZE = 8
+    BUNCHES_1,
+    BUNCHES_2,
+    COLLIDING_BUNCHES,
+    TARGET_BUNCHES,
+    FILL_TYPE,
+    PARTICLES_1,
+    PARTICLES_2,
+    ISIZE
   };
   enum FloatParamIndex {
     INTENSITY_1 = 0,
-    INTENSITY_2 = 1,
-    ENERGY = 2,
-    DELIV_LUMI = 3,
-    REC_LUMI = 4,
-    LUMI_PER_B = 5,
-    BEAM1_VC = 7,
-    BEAM2_VC = 8,
-    BEAM1_RF = 9,
-    BEAM2_RF = 10,
-    INST_LUMI = 11,
-    INST_LUMI_ERR = 12,
-    FSIZE = 13
+    INTENSITY_2,
+    ENERGY,
+    DELIV_LUMI,
+    REC_LUMI,
+    LUMI_PER_B,
+    BEAM1_VC,
+    BEAM2_VC,
+    BEAM1_RF,
+    BEAM2_RF,
+    INST_LUMI,
+    INST_LUMI_ERR,
+    FSIZE
   };
-  enum TimeParamIndex { CREATE_TIME = 0, BEGIN_TIME = 1, END_TIME = 2, TSIZE = 3 };
-  enum StringParamIndex { INJECTION_SCHEME = 0, LHC_STATE = 1, LHC_COMMENT = 2, CTPPS_STATUS = 3, SSIZE = 4 };
+  enum TimeParamIndex { 
+    CREATE_TIME = 0,
+    BEGIN_TIME,
+    END_TIME,
+    TSIZE
+  };
+  enum StringParamIndex { 
+    INJECTION_SCHEME = 0,
+    LHC_STATE,
+    LHC_COMMENT,
+    CTPPS_STATUS,
+    SSIZE
+  };
 
   typedef FillType FillTypeId;
   typedef ParticleType ParticleTypeId;
