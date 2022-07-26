@@ -20,7 +20,7 @@ process.source = cms.Source('EmptyIOVSource',
     interval = cms.uint64(1)
 )
 
-# load calibrations from database
+# load info from database
 process.load('CondCore.CondDB.CondDB_cfi')
 process.CondDB.connect = 'sqlite_file:LHCInfoPerLS.sqlite' # SQLite input
 

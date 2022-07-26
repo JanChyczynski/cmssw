@@ -9,13 +9,6 @@ process.source = cms.Source('EmptyIOVSource',
     interval = cms.uint64(1)
 )
 
-# from CondFormats.PPSObjects.PPSTimingDetEnum_cff import PPSTimingDetEnum
-
-# # load calibrations from JSON file
-# process.load('CalibPPS.ESProducers.ppsTimingCalibrationESSource_cfi')
-# process.ppsTimingCalibrationESSource.calibrationFile = cms.FileInPath('RecoPPS/Local/data/timing_calibration_diamond_2018_mar19.ex.json')
-# process.ppsTimingCalibrationESSource.subDetector = PPSTimingDetEnum.PPS_DIAMOND
-
 # output service for database
 process.load('CondCore.CondDB.CondDB_cfi')
 process.CondDB.connect = 'sqlite_file:LHCInfoPerFill.sqlite' # SQLite output

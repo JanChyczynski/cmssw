@@ -36,25 +36,21 @@ void LHCInfoPerFillWriter::analyze(const edm::Event& iEvent, const edm::EventSet
   lhcInfoPerFill.setFillType(lhcInfoPerFill.PROTONS);
   lhcInfoPerFill.setParticleTypeForBeam1(lhcInfoPerFill.PROTON);
   lhcInfoPerFill.setParticleTypeForBeam2(lhcInfoPerFill.PROTON);
-  lhcInfoPerFill.setIntensityForBeam1(21.37);
-  lhcInfoPerFill.setIntensityForBeam2(12.23);
-  lhcInfoPerFill.setEnergy(1.12);
-  lhcInfoPerFill.setDelivLumi(2.34);
-  lhcInfoPerFill.setRecLumi(3.43);
-  lhcInfoPerFill.setInstLumi(4.345);
-  lhcInfoPerFill.setInstLumiError(5.567);
-  lhcInfoPerFill.setCreationTime(65766);
-  lhcInfoPerFill.setBeginTime(76788);
-  lhcInfoPerFill.setEndTime(89090);
+  lhcInfoPerFill.setIntensityForBeam1(1016.5);
+  lhcInfoPerFill.setIntensityForBeam2(1096.66);
+  lhcInfoPerFill.setEnergy(7000);
+  lhcInfoPerFill.setDelivLumi(2E-07);
+  lhcInfoPerFill.setRecLumi(2E-07);
+  lhcInfoPerFill.setInstLumi(0);
+  lhcInfoPerFill.setInstLumiError(0);
+  lhcInfoPerFill.setCreationTime(6561530930997627120);
+  lhcInfoPerFill.setBeginTime(6561530930997627120);
+  lhcInfoPerFill.setEndTime(6561530930997627120);
   lhcInfoPerFill.setInjectionScheme("None");
-  lhcInfoPerFill.setLumiPerBX({3.4, 45.3});
+  lhcInfoPerFill.setLumiPerBX({0.000114139, 0.000114139});
   lhcInfoPerFill.setLhcState("some lhcState");
   lhcInfoPerFill.setLhcComment("some lhcComment");
   lhcInfoPerFill.setCtppsStatus("some ctppsStatus");
-  lhcInfoPerFill.setBeam1VC({45.6, 67.4});
-  lhcInfoPerFill.setBeam2VC({245.56, 56.45});
-  lhcInfoPerFill.setBeam1RF({56.78, 34.3});
-  lhcInfoPerFill.setBeam2RF({123.566, 5767});
 
   // store the info into a DB object
   edm::Service<cond::service::PoolDBOutputService> poolDbService;

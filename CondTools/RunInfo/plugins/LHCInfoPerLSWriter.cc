@@ -28,11 +28,11 @@ private:
 
 void LHCInfoPerLSWriter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   LHCInfoPerLS lhcInfoPerLS;
-  lhcInfoPerLS.setCrossingAngleX(5.5);
-  lhcInfoPerLS.setCrossingAngleY(6.6);
-  lhcInfoPerLS.setBetaStarX(8.8);
-  lhcInfoPerLS.setBetaStarY(10);
-  lhcInfoPerLS.setLumiSection(3);
+  lhcInfoPerLS.setLumiSection(1);
+  lhcInfoPerLS.setCrossingAngleX(170);
+  lhcInfoPerLS.setCrossingAngleY(170);
+  lhcInfoPerLS.setBetaStarX(11);
+  lhcInfoPerLS.setBetaStarY(11);
 
   // store the info into a DB object
   edm::Service<cond::service::PoolDBOutputService> poolDbService;
