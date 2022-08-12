@@ -28,6 +28,7 @@ private:
 
 void LHCInfoPerLSWriter::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
   LHCInfoPerLS lhcInfoPerLS;
+  lhcInfoPerLS.setFillNumber(7066);
   lhcInfoPerLS.setLumiSection(1);
   lhcInfoPerLS.setCrossingAngleX(170);
   lhcInfoPerLS.setCrossingAngleY(170);

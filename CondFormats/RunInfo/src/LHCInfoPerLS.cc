@@ -9,6 +9,8 @@ LHCInfoPerLS::LHCInfoPerLS()
     : LHCInfoVectorizedFields (ISIZE, FSIZE, TSIZE, SSIZE) {}
 
 //getters
+unsigned short const LHCInfoPerLS::fillNumber() const { return LHCInfoPerLS::getOneParam(m_intParams, LHC_FILL); }
+
 float const LHCInfoPerLS::crossingAngleX() const { return LHCInfoPerLS::getOneParam(m_floatParams, CROSSING_ANGLE_X); }
 
 float const LHCInfoPerLS::crossingAngleY() const { return LHCInfoPerLS::getOneParam(m_floatParams, CROSSING_ANGLE_Y); }
@@ -20,6 +22,8 @@ float const LHCInfoPerLS::betaStarY() const { return LHCInfoPerLS::getOneParam(m
 unsigned int const& LHCInfoPerLS::lumiSection() const { return LHCInfoPerLS::getOneParam(m_intParams, LUMI_SECTION); }
 
 //setters
+void LHCInfoPerLS::setFillNumber(unsigned short lhcFill) {  LHCInfoPerLS::setOneParam(m_intParams, LHC_FILL, static_cast<unsigned int>(lhcFill)); }
+
 void LHCInfoPerLS::setCrossingAngleX(float const& angle) { LHCInfoPerLS::setOneParam(m_floatParams, CROSSING_ANGLE_X, angle); }
 
 void LHCInfoPerLS::setCrossingAngleY(float const& angle) { LHCInfoPerLS::setOneParam(m_floatParams, CROSSING_ANGLE_Y, angle); }
@@ -33,20 +37,23 @@ void LHCInfoPerLS::setLumiSection(unsigned int const& lumiSection) {
 }
 
 //sets all values in one go
-void LHCInfoPerLS::setInfo(float const& angleX,
+void LHCInfoPerLS::setInfo(unsigned short lhcFill,
+                      unsigned int const& lumiSection,
+                      float const& angleX,
                       float const& angleY,
                       float const& betaX,
-                      float const& betaY,
-                      unsigned int const& lumiSection) {
+                      float const& betaY) {
+  this->setFillNumber(lhcFill);
+  this->setLumiSection(lumiSection);
   this->setCrossingAngleX(angleX);
   this->setCrossingAngleY(angleY);
   this->setBetaStarX(betaX);
   this->setBetaStarY(betaY);
-  this->setLumiSection(lumiSection);
 }
 
 void LHCInfoPerLS::print(std::stringstream& ss) const {
-  ss << "Crossing angle x (urad): " << this->crossingAngleX() << std::endl
+  ss << "LHC fill: " << this->fillNumber() << std::endl
+     << "Crossing angle x (urad): " << this->crossingAngleX() << std::endl
      << "Crossing angle y (urad): " << this->crossingAngleY() << std::endl
      << "Beta star x (cm): " << this->betaStarX() << std::endl
      << "Beta star y (cm): " << this->betaStarY() << std::endl

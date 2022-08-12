@@ -12,7 +12,8 @@
 class LHCInfoPerLS : public LHCInfoVectorizedFields {
 public:
   enum IntParamIndex {
-    LUMI_SECTION = 0,
+    LHC_FILL = 0,
+    LUMI_SECTION,
     ISIZE
   };
   enum FloatParamIndex {
@@ -26,6 +27,8 @@ public:
   LHCInfoPerLS();
 
   //getters
+  unsigned short const fillNumber() const;
+  
   float const crossingAngleX() const;
 
   float const crossingAngleY() const;
@@ -37,6 +40,8 @@ public:
   unsigned int const& lumiSection() const;
 
   //setters
+  void setFillNumber(unsigned short lhcFill);
+
   void setCrossingAngleX(float const& angle);
 
   void setCrossingAngleY(float const& angle);
@@ -48,11 +53,12 @@ public:
   void setLumiSection(unsigned int const& lumiSection);
 
   //sets all values in one go
-  void setInfo(float const& angleX,
+  void setInfo(unsigned short lhcFill,
+               unsigned int const& lumiSection,
+               float const& angleX,
                float const& angleY,
                float const& betaX,
-               float const& betaY,
-               unsigned int const& lumiSection);
+               float const& betaY);
 
   bool equals(const LHCInfoPerLS& rhs) const;
 
