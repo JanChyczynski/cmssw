@@ -34,6 +34,7 @@ void LHCInfoPerLSWriter::analyze(const edm::Event& iEvent, const edm::EventSetup
   lhcInfoPerLS.setCrossingAngleY(170);
   lhcInfoPerLS.setBetaStarX(11);
   lhcInfoPerLS.setBetaStarY(11);
+  lhcInfoPerLS.setRunNumber(301765);
 
   // store the info into a DB object
   edm::Service<cond::service::PoolDBOutputService> poolDbService;

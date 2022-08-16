@@ -3,6 +3,9 @@
 
 #include "CondFormats/Serialization/interface/Serializable.h"
 #include "CondFormats/RunInfo/interface/LHCInfoVectorizedFields.h"
+
+#include "CondCore/CondDB/interface/Types.h"
+
 #include <bitset>
 #include <iostream>
 #include <string>
@@ -23,12 +26,18 @@ public:
     BETA_STAR_Y,
     FSIZE
   };
+  enum TimeParamIndex { 
+    RUN_NUMBER = 0,
+    TSIZE
+  };
 
   LHCInfoPerLS();
 
   //getters
   unsigned short const fillNumber() const;
-  
+
+  unsigned int const& lumiSection() const;
+
   float const crossingAngleX() const;
 
   float const crossingAngleY() const;
@@ -37,10 +46,13 @@ public:
 
   float const betaStarY() const;
 
-  unsigned int const& lumiSection() const;
+  cond::Time_t runNumber() const;
+
 
   //setters
-  void setFillNumber(unsigned short lhcFill);
+  void setFillNumber(unsigned short const& lhcFill);
+
+  void setLumiSection(unsigned int const& lumiSection);
 
   void setCrossingAngleX(float const& angle);
 
@@ -50,15 +62,16 @@ public:
 
   void setBetaStarY(float const& betaStar);
 
-  void setLumiSection(unsigned int const& lumiSection);
+  void setRunNumber(cond::Time_t const& runNumber);
 
   //sets all values in one go
-  void setInfo(unsigned short lhcFill,
+  void setInfo(unsigned short const& lhcFill,
                unsigned int const& lumiSection,
                float const& angleX,
                float const& angleY,
                float const& betaX,
-               float const& betaY);
+               float const& betaY,
+               cond::Time_t const& runNumber);
 
   bool equals(const LHCInfoPerLS& rhs) const;
 
