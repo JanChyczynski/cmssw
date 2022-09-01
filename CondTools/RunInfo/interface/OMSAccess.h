@@ -153,6 +153,9 @@ namespace cond {
     OMSServiceResultIterator begin() const;
     OMSServiceResultIterator end() const;
 
+    OMSServiceResultRef front() const;
+    OMSServiceResultRef back() const;
+
     // parse json returned from curl, filling the property tree
     size_t parseData(const std::string& data);
 
