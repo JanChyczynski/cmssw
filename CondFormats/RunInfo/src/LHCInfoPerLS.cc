@@ -63,8 +63,8 @@ void LHCInfoPerLS::print(std::stringstream& ss) const {
      << "Run number: " << this->runNumber() << std::endl
      << "Crossing angle x (urad): " << this->crossingAngleX() << std::endl
      << "Crossing angle y (urad): " << this->crossingAngleY() << std::endl
-     << "Beta star x (cm): " << this->betaStarX() << std::endl
-     << "Beta star y (cm): " << this->betaStarY() << std::endl;
+     << "Beta star x (m): " << this->betaStarX() << std::endl
+     << "Beta star y (m): " << this->betaStarY() << std::endl;
 }
 
 std::ostream& operator<<(std::ostream& os, LHCInfoPerLS beamInfo) {
