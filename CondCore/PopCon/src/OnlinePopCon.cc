@@ -20,7 +20,7 @@ namespace popcon {
   void OnlinePopCon::initialize() {
     // Check if DB service is available
     if (!m_dbService.isAvailable()) {
-      throw Exception("OnlinePopCon", "DBService not available");
+      throw Exception("OnlinePopCon", "[initialize] DBService not available");
     }
 
     // If requested, lock records
@@ -35,18 +35,20 @@ namespace popcon {
   }
 
   void OnlinePopCon::finalize() {
-    // If DB service available and records are locked, unlock them
-    if (m_dbService.isAvailable()) {
-      // Release locks
-      if (m_useLockRecors) {
-        m_dbService->logger().logInfo() << "OnlinePopCon::finalize - releasing locks";
-        m_dbService->releaseLocks();
-      }
-
-      // Stop DB logging service
-      m_dbService->logger().logInfo() << "OnlinePopCon::finalize - end logging for record: " << m_recordName;
-      m_dbService->logger().end(m_dbLoggerReturn_);
+    // Check if DB service is available
+    if (!m_dbService.isAvailable()) {
+      throw Exception("OnlinePopCon", "[finalize] DBService not available");
     }
+
+    // Release locks if previously locked
+    if (m_useLockRecors) {
+      m_dbService->logger().logInfo() << "OnlinePopCon::finalize - releasing locks";
+      m_dbService->releaseLocks();
+    }
+
+    // Stop DB logging service
+    m_dbService->logger().logInfo() << "OnlinePopCon::finalize - end logging for record: " << m_recordName;
+    m_dbService->logger().end(m_dbLoggerReturn_);
   }
 
 }  // namespace popcon
