@@ -54,30 +54,42 @@ namespace popcon {
     initialize();
 
     // Get data to be uploaded
-    std::pair<Source::Container const*, std::string const> ret = source(); // FIXME: how to initialize the source?
+    std::pair<Source::Container const*, std::string const> ret = source();  // FIXME: how to initialize the source?
     Source::Container const& iovs = *ret.first;
 
     // Check that only 1 iov/payload is provided
     if (iovs.size() > 1) {
-      throw Exception("OnlinePopCon", "More than one iov/payload provided!");
+      throw Exception("OnlinePopCon", "[write] More than one iov/payload provided!");
+    }
+
+    // If zero payloads to transfer, finalize and return
+    if (iovs.empty()) {
+      m_dbService->logger().logInfo() << "OnlinePopCon::write - Nothing to transfer";
+      finalize();
+      return;
     }
 
     // Upload
-    if (m_dbService.isAvailable()) {
-      // Log the since that will be uploaded
-      for (const auto& it : iovs) {
-        m_dbService->logger().logInfo() << "OnlinePopCon::write - uploading since: " << it.first;
-      }
+    // Check if DB service is available
+    if (!m_dbService.isAvailable()) {
+      throw Exception("OnlinePopCon", "[write] DBService not available");
+    }
 
-      // Upload the payload
-      try {
-        m_dbService->writeIOVForNextLumisection(iovs.second, m_recordName);  //FIXME: here I should pass directly the payload as first argument
-        m_dbService->logger().logInfo() << "OnlinePopCon::write - writeForNextLumisection successful!";
-      } catch (const std::exception& e) {
-        m_dbService->logger().logError() << "OnlinePopCon::write - Error writing record: " << m_recordName;
-        m_dbService->logger().logError() << "Error is: " << e.what();
-        m_dbLoggerReturn_ = 2;
-      }
+    // Get the only payload to transfer
+    auto [since, payload] = *iovs.begin();
+
+    // Log the original since
+    m_dbService->logger().logInfo() << "OnlinePopCon::write - original since: " << since;
+
+    // Upload the payload
+    try {
+      auto targetSince = m_dbService->writeIOVForNextLumisection(payload, m_recordName);
+      m_dbService->logger().logInfo() << "OnlinePopCon::write - writeForNextLumisection successful!";
+      m_dbService->logger().logInfo() << "OnlinePopCon::write - uploaded with since: " << targetSince;
+    } catch (const std::exception& e) {
+      m_dbService->logger().logError() << "OnlinePopCon::write - Error writing record: " << m_recordName;
+      m_dbService->logger().logError() << "Error is: " << e.what();
+      m_dbLoggerReturn_ = 2;
     }
 
     // Finalize
