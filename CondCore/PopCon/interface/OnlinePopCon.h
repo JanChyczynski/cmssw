@@ -54,8 +54,9 @@ namespace popcon {
     initialize();
 
     // Get data to be uploaded
-    std::pair<Source::Container const*, std::string const> ret = source();  // FIXME: how to initialize the source?
-    Source::Container const& iovs = *ret.first;
+    typedef typename Source::Container Container;
+    std::pair<Container const*, std::string const> ret = source();  // FIXME: how to initialize the source?
+    Container const& iovs = *ret.first;
 
     // Check that only 1 iov/payload is provided
     if (iovs.size() > 1) {
