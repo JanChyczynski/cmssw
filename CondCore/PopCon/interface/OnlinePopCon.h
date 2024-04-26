@@ -31,31 +31,42 @@ namespace popcon {
 
     OnlinePopCon(const edm::ParameterSet& pset);
 
-    ~OnlinePopCon() = default;
+    virtual ~OnlinePopCon();
 
     template <typename Source>
     void write(Source const& source);
 
   private:
-    void initialize();
+    cond::persistency::Session initialize();
+    cond::persistency::Session preparePopCon();
     void finalize();
 
   private:
-    edm::Service<cond::service::OnlineDBOutputService> m_dbService;  // DB service
-    int m_dbLoggerReturn_;                                           // DB logger return value
-    std::string m_recordName;                                        // output record name
-    bool m_useLockRecors;                                            // whether to lock the records or not
+    // DB service
+    edm::Service<cond::service::OnlineDBOutputService> m_dbService;
+
+    // PopCon infrastructure
+    cond::persistency::Session m_targetSession;
+    std::string m_targetConnectionString;
+    std::string m_authPath;
+    int m_authSys;
+    std::string m_recordName;
+    cond::TagInfo_t m_tagInfo;
+    cond::LogDBEntry_t m_logDBEntry;
+
+    // OnlinePopCon specific
+    int m_dbLoggerReturn_;  // DB logger return value
+    bool m_useLockRecors;   // whether to lock the records or not
+
+    // Version
     static constexpr const char* const s_version = "5.0";
   };
 
   template <typename Source>
   void OnlinePopCon::write(Source const& source) {
-    // Initialize
-    initialize();
-
     // Get data to be uploaded
     typedef typename Source::Container Container;
-    std::pair<Container const*, std::string const> ret = source();  // FIXME: how to initialize the source?
+    std::pair<Container const*, std::string const> ret = source(initialize(), m_tagInfo, m_logDBEntry);
     Container const& iovs = *ret.first;
 
     // Check that only 1 iov/payload is provided
@@ -77,10 +88,10 @@ namespace popcon {
     }
 
     // Get the only payload to transfer
-    auto [since, payload] = *iovs.begin();
+    auto [originalSince, payload] = *iovs.begin();
 
     // Log the original since
-    m_dbService->logger().logInfo() << "OnlinePopCon::write - original since: " << since;
+    m_dbService->logger().logInfo() << "OnlinePopCon::write - original since: " << originalSince;
 
     // Upload the payload
     try {
