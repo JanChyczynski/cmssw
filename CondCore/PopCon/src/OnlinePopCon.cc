@@ -30,7 +30,7 @@ namespace popcon {
   cond::persistency::Session OnlinePopCon::preparePopCon() {
     // Initialization almost identical to PopCon
     const std::string& connectionStr = m_dbService->session().connectionString();
-    m_dbService->forceInit();  // FIXME: should we run this?
+    m_dbService->forceInit();
     std::string tagName = m_dbService->tag(m_recordName);
     m_tagInfo.name = tagName;
     if (m_targetConnectionString.empty()) {
@@ -44,24 +44,22 @@ namespace popcon {
       m_targetSession = connPool.createSession(m_targetConnectionString);
       m_targetSession.transaction().start();
     }
+
+    m_dbService->logger().logInfo() << "OnlinePopCon::preparePopCon";
+    m_dbService->logger().logInfo() << "  destination DB: " << connectionStr;
+    m_dbService->logger().logInfo() << "  target DB: "
+                                    << (m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString);
+
     if (m_targetSession.existsDatabase() && m_targetSession.existsIov(tagName)) {
       cond::persistency::IOVProxy iov = m_targetSession.readIov(tagName);
       m_tagInfo.size = iov.sequenceSize();
       if (m_tagInfo.size > 0) {
         m_tagInfo.lastInterval = iov.getLast();
       }
-      m_dbService->logger().logInfo() << "OnlinePopCon::preparePopCon";
-      m_dbService->logger().logInfo() << "  destination DB: " << connectionStr;
-      m_dbService->logger().logInfo() << "  target DB: "
-                                      << (m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString);
       m_dbService->logger().logInfo() << "  TAG: " << tagName << ", last since/till: " << m_tagInfo.lastInterval.since
                                       << "/" << m_tagInfo.lastInterval.till;
       m_dbService->logger().logInfo() << "  size: " << m_tagInfo.size;
     } else {
-      m_dbService->logger().logInfo() << "OnlinePopCon::preparePopCon";
-      m_dbService->logger().logInfo() << "  destination DB: " << connectionStr;
-      m_dbService->logger().logInfo() << "  target DB: "
-                                      << (m_targetConnectionString.empty() ? connectionStr : m_targetConnectionString);
       m_dbService->logger().logInfo() << "  TAG: " << tagName << "; First writer to this new tag.";
     }
     return m_targetSession;
@@ -80,7 +78,7 @@ namespace popcon {
 
     // If requested, lock records
     if (m_useLockRecors) {
-      m_dbService->logger().logInfo() << "OnlinePopCon::finalize - locking records";
+      m_dbService->logger().logInfo() << "OnlinePopCon::initialize - locking records";
       m_dbService->lockRecords();
     }
 

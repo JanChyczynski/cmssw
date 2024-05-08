@@ -59,7 +59,7 @@ namespace popcon {
     bool m_useLockRecors;   // whether to lock the records or not
 
     // Version
-    static constexpr const char* const s_version = "5.0";
+    static constexpr const char* const s_version = "1.0";
   };
 
   template <typename Source>
