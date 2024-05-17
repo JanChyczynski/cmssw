@@ -145,6 +145,9 @@ public:
       if (m_endTime > now)
         m_endTime = now;
     }
+    if (m_debugLogic && m_endFillMode) {
+      throw cms::Exception("invalid argument") << "debugLogic == true not supported for endFillMode == true";
+    }
   }
 
   ~LHCInfoPerLSPopConSourceHandler() override = default;
@@ -278,6 +281,9 @@ public:
         query->filterLT("start_time", m_endTime);
         if (m_endFillMode)
           query->filterNotNull("end_time");
+        else 
+          query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
+
         bool foundFill = query->execute();
         if (foundFill)
           foundFill = makeFillPayload(m_fillPayload, query->result());
@@ -318,7 +324,7 @@ public:
 
       if(!m_endFillMode) {
         if(m_tmpBuffer.size() > 1) {
-          throw cms::Exception("LHCInfoPerLSPopConSourceHandler")
+          throw cms::Exception("LHCInfoPerFillPopConSourceHandler")
             << "More than 1 payload buffered for writing in duringFill mode.\
            In this mode only up to 1 payload can be written";
         }
@@ -350,8 +356,6 @@ public:
       if (m_prevPayload->fillNumber() and !ongoingFill) {
         if (m_endFillMode) {
           addEmptyPayload(m_endFillTime);
-        } else {
-          addEmptyPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));
         }
       }
     }
