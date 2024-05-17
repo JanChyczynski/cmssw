@@ -312,6 +312,9 @@ public:
       query->filterLT("start_time", m_endTime);
       if (m_endFillMode)
         query->filterNotNull("end_time");
+      else 
+        query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
+
       bool foundFill = query->execute();
       if (foundFill)
         foundFill = theLHCInfoPerFillImpl::makeFillPayload(m_fillPayload, query->result());
@@ -352,9 +355,14 @@ public:
         }
       }
 
-      // In duringFill mode, convert the timestamp-type IOVs to lumiid-type IOVs
-      // before transferring the payloads from the buffer to the final collection
       if (!m_endFillMode) {
+        if(m_tmpBuffer.size() > 1) {
+          throw cms::Exception("LHCInfoPerFillPopConSourceHandler")
+            << "More than 1 payload buffered for writing in duringFill mode.\
+           In this mode only up to 1 payload can be written";
+        }
+        // In duringFill mode, convert the timestamp-type IOVs to lumiid-type IOVs
+        // before transferring the payloads from the buffer to the final collection
         convertBufferedIovsToLumiid(m_timestampToLumiid);
       }
 
@@ -362,6 +370,20 @@ public:
       edm::LogInfo(m_name) << "Added " << niovs << " iovs within the Fill time";
       m_tmpBuffer.clear();
       m_timestampToLumiid.clear();
+
+      if (!m_endFillMode) {
+        if(m_iovs.empty()) {
+          addEmptyPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill)); //the IOV doesn't matter when using OnlinePopCon
+        }
+        if(theLHCInfoPerFillImpl::comparePayloads(*(m_iovs.begin()->second), *m_prevPayload)) {
+          m_iovs.clear();
+          edm::LogInfo(m_name) << "The buffered payload has the same data as the previous payload in the tag. It will not be written.";
+        }
+
+        return;
+      }
+
+      // endFill mode only:
       if (m_prevPayload->fillNumber() and !ongoingFill) {
         if (m_endFillMode) {
           addEmptyPayload(endFillTime);
