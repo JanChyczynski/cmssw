@@ -321,6 +321,13 @@ public:
           throw cms::Exception("LHCInfoPerLSPopConSourceHandler")
             << "More than 1 payload buffered for writing in duringFill mode.\
            In this mode only up to 1 payload can be written";
+        } else if (m_tmpBuffer.size() == 1) {
+          if(theLHCInfoPerLSImpl::comparePayloads(*(m_tmpBuffer.begin()->second), *m_prevPayload)) {
+            m_tmpBuffer.clear();
+            edm::LogInfo(m_name) << "The buffered payload has the same data as the previous payload in the tag. It will not be written.";
+          }
+        } else if(m_tmpBuffer.empty()) {
+          addEmptyPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill)); //the IOV doesn't matter when using OnlinePopCon
         }
       }
 
@@ -331,14 +338,6 @@ public:
       m_lsIdMap.clear();
       
       if (!m_endFillMode) {
-        if(m_iovs.empty()) {
-          addEmptyPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill)); //the IOV doesn't matter when using OnlinePopCon
-        }
-        if(theLHCInfoPerLSImpl::comparePayloads(*(m_iovs.begin()->second), *m_prevPayload)) {
-          m_iovs.clear();
-          edm::LogInfo(m_name) << "The buffered payload has the same data as the previous payload in the tag. It will not be written.";
-        }
-        
         return;
       }
       
