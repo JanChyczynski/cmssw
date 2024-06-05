@@ -167,13 +167,10 @@ public:
 
     cond::Time_t lastSince = tagInfo().lastInterval.since;
     if (tagInfo().isEmpty()) {
-      // for a new or empty tag, an empty payload should be added on top with since=1
+      // for a new or empty tag in endFill mode, an empty payload should be added on top with since=1
       if (m_endFillMode) {
         addEmptyPayload(1);
         lastSince = 1;
-      } else {
-        addEmptyPayload(cond::time::lumiTime(1, 1));
-        lastSince = cond::time::lumiTime(1, 1);
       }
     } else {
       edm::LogInfo(m_name) << "The last Iov in tag " << tagInfo().name << " valid since " << lastSince << "from "
