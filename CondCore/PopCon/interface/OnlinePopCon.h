@@ -95,7 +95,7 @@ namespace popcon {
 
     // Upload the payload
     try {
-      auto targetSince = m_dbService->writeIOVForNextLumisection(payload, m_recordName);
+      auto targetSince = m_dbService->writeIOVForNextLumisection(*payload, m_recordName);
       m_dbService->logger().logInfo() << "OnlinePopCon::write - writeForNextLumisection successful!";
       m_dbService->logger().logInfo() << "OnlinePopCon::write - uploaded with since: " << targetSince;
     } catch (const std::exception& e) {
