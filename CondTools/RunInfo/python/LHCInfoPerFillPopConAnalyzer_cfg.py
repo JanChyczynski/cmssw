@@ -96,21 +96,21 @@ process.PoolDBOutputService = cms.Service("PoolDBOutputService",
                                                             )
                                           )
 
-process.Test1 = cms.EDAnalyzer("LHCInfoPerFillPopConAnalyzer",
+process.Test1 = cms.EDAnalyzer("LHCInfoPerFillPopConAnalyzer" if options.mode == "endFill" else "LHCInfoPerFillOnlinePopConAnalyzer",
                                SinceAppendMode = cms.bool(True),
                                record = cms.string('LHCInfoPerFillRcd'),
                                name = cms.untracked.string('LHCInfo'),
                                Source = cms.PSet(fill = cms.untracked.uint32(6417),
                                    startTime = cms.untracked.string(options.startTime),
                                    endTime = cms.untracked.string(options.endTime),
-                                   endFill = cms.untracked.bool(True if options.mode == "endFill" else False),
+                                   endFill = cms.untracked.bool(options.mode == "endFill"),
                                    name = cms.untracked.string("LHCInfoPerFillPopConSourceHandler"),
                                    connectionString = cms.untracked.string("oracle://cms_orcon_adg/CMS_RUNTIME_LOGGER"),
                                    ecalConnectionString = cms.untracked.string("oracle://cms_orcon_adg/CMS_DCS_ENV_PVSS_COND"),
                                    omsBaseUrl = cms.untracked.string("http://vocms0184.cern.ch/agg/api/v1"),
                                    authenticationPath = cms.untracked.string(""),
                                    debug=cms.untracked.bool(False)
-                                                 ),
+                               ),
                                loggingOn = cms.untracked.bool(True),
                                IsDestDbCheckedInQueryLog = cms.untracked.bool(False)
                                )
