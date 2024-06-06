@@ -17,7 +17,6 @@ public:
   ~LHCInfoPerLSPopConSourceHandler() override;
   void getNewObjects() override;
   std::string id() const override; 
-  // std::string id() const override { return m_name; }
 
   static constexpr unsigned int kLumisectionsQueryLimit = 4000;
 
