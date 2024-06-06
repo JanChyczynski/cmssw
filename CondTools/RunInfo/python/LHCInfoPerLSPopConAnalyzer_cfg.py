@@ -102,14 +102,14 @@ process.PoolDBOutputService = cms.Service("PoolDBOutputService",
                                                             )
                                           )
 
-process.Test1 = cms.EDAnalyzer("LHCInfoPerLSPopConAnalyzer",
+process.Test1 = cms.EDAnalyzer("LHCInfoPerLSPopConAnalyzer" if options.mode == "endFill" else "LHCInfoPerLSOnlinePopConAnalyzer",
                                SinceAppendMode = cms.bool(True),
                                record = cms.string('LHCInfoPerLSRcd'),
                                name = cms.untracked.string('LHCInfo'),
                                Source = cms.PSet(fill = cms.untracked.uint32(6417),
                                    startTime = cms.untracked.string(options.startTime),
                                    endTime = cms.untracked.string(options.endTime),
-                                   endFill = cms.untracked.bool(True if options.mode == "endFill" else False),
+                                   endFill = cms.untracked.bool(options.mode == "endFill"),
                                    name = cms.untracked.string("LHCInfoPerLSPopConSourceHandler"),
                                    connectionString = cms.untracked.string("oracle://cms_orcon_adg/CMS_RUNTIME_LOGGER"),
                                    omsBaseUrl = cms.untracked.string("http://vocms0184.cern.ch/agg/api/v1"),
