@@ -17,11 +17,8 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <sstream>
 
-
 using std::make_pair;
 using std::pair;
-
-
 
 namespace theLHCInfoPerLSImpl {
   bool comparePayloads(const LHCInfoPerLS& rhs, const LHCInfoPerLS& lhs) {

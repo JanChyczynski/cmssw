@@ -2,6 +2,6 @@
 #include "CondTools/RunInfo/interface/LHCInfoPerLSPopConSourceHandler.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
-using LHCInfoPerLSPopConAnalyzer = popcon::PopConAnalyzer<LHCInfoPerLSPopConSourceHandler>;
+typedef popcon::PopConAnalyzer<LHCInfoPerLSPopConSourceHandler> LHCInfoPerLSPopConAnalyzer;
 
 DEFINE_FWK_MODULE(LHCInfoPerLSPopConAnalyzer);
