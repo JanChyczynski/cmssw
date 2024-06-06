@@ -116,7 +116,7 @@ process.Test1 = cms.EDAnalyzer("LHCInfoPerLSPopConAnalyzer" if options.mode == "
                                    authenticationPath = cms.untracked.string(""),
                                    debug=cms.untracked.bool(False), # Additional logs
                                    debugLogic=cms.untracked.bool(options.debugLogic),
-                                                 ),
+                               ),
                                loggingOn = cms.untracked.bool(True),
                                IsDestDbCheckedInQueryLog = cms.untracked.bool(False)
                                )
