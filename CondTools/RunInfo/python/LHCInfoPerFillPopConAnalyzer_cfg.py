@@ -87,14 +87,43 @@ if options.mode == 'endFill':
 else:
   timetype = 'lumiid'
 
-process.PoolDBOutputService = cms.Service("PoolDBOutputService",
-                                          CondDBConnection,
-                                          timetype = cms.untracked.string(timetype),
-                                          toPut = cms.VPSet(cms.PSet(record = cms.string('LHCInfoPerFillRcd'),
-                                                                     tag = cms.string( options.tag )
-                                                                     )
-                                                            )
-                                          )
+if options.mode == "endFill":
+  process.PoolDBOutputService = cms.Service("PoolDBOutputService",
+                                            CondDBConnection,
+                                            timetype = cms.untracked.string(timetype),
+                                            toPut = cms.VPSet(cms.PSet(record = cms.string('LHCInfoPerFillRcd'),
+                                                                      tag = cms.string( options.tag )
+                                                                      )
+                                                              )
+                                            )
+else:
+  process.OnlineDBOutputService = cms.Service("OnlineDBOutputService",
+    CondDBConnection,
+    # TODO work in progress, what is commented out is what comes from beam_dqm_sourceclient-live_cfg.py 
+    # and I'm not sure if it's needed or what value it should have
+
+    # DBParameters = cms.PSet(
+    #                         messageLevel = cms.untracked.int32(0),
+    #                         authenticationPath = cms.untracked.string('.')
+    #                     ),
+
+    # connect =  cms.string( options.destinationConnection ),
+    preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
+
+    runNumber = cms.untracked.uint64(382454),
+    omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+    latency = cms.untracked.uint32(2),
+    ### autoCommit = cms.untracked.bool(True),
+    ### jobName = cms.untracked.string(BSOnlineJobName), # name of the DB log record
+    timetype = cms.untracked.string(timetype),
+    toPut = cms.VPSet(cms.PSet(
+        record = cms.string('LHCInfoPerFillRcd'),
+        tag = cms.string( options.tag ),
+        onlyAppendUpdatePolicy = cms.untracked.bool(True)
+    )),
+    frontierKey = cms.untracked.string('wrong-key')
+)
+
 
 process.Test1 = cms.EDAnalyzer("LHCInfoPerFillPopConAnalyzer" if options.mode == "endFill" else "LHCInfoPerFillOnlinePopConAnalyzer",
                                SinceAppendMode = cms.bool(True),
