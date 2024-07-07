@@ -16,7 +16,7 @@ public:
   LHCInfoPerLSPopConSourceHandler(edm::ParameterSet const& pset);
   ~LHCInfoPerLSPopConSourceHandler() override;
   void getNewObjects() override;
-  std::string id() const override; 
+  std::string id() const override;
 
   static constexpr unsigned int kLumisectionsQueryLimit = 4000;
 
