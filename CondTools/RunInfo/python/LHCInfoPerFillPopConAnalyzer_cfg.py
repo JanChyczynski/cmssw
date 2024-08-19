@@ -109,9 +109,9 @@ else:
 
     # connect =  cms.string( options.destinationConnection ),
     preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
-
+    lastLumiFile = cms.untracked.string('src/CondTools/RunInfo/test/last_lumi.txt'),
     runNumber = cms.untracked.uint64(382454),
-    omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+    # omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
     latency = cms.untracked.uint32(2),
     ### autoCommit = cms.untracked.bool(True),
     ### jobName = cms.untracked.string(BSOnlineJobName), # name of the DB log record
