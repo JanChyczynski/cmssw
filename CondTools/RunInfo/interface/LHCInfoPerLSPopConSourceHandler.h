@@ -43,15 +43,15 @@ private:
   std::string m_connectionString;
   std::string m_authpath;
   std::string m_omsBaseUrl;
-  //makes duringFill interpret finished fills as ongoing fills and writing their last LS
-  // (disabling the check if the last LS is in stable beams, although still only fills with stable beams are being processed)
-  // also, it doesn't write empty payload at the end of a finished fill (because it's interpreted as ongoing)
+  //Allows for basic test of durigFill mode when there is no Stable Beams in LHC
+  //makes duringFill interpret the fills as ongoing fills and writing their last LS
+  // (disabling the check if the last LS is in stable beams, although still only fill with stable beams are being processed)
   const bool m_debugLogic;
   std::unique_ptr<LHCInfoPerLS> m_fillPayload;
   std::shared_ptr<LHCInfoPerLS> m_prevPayload;
   cond::Time_t m_startFillTime;
   cond::Time_t m_endFillTime;
-  cond::Time_t m_prevEndFillTime;
+  cond::Time_t m_prevEndFillTime = 0;
   cond::Time_t m_prevStartFillTime;
   cond::Time_t m_startStableBeamTime;
   cond::Time_t m_endStableBeamTime;
