@@ -114,12 +114,17 @@ else:
     #                     ),
 
     # connect =  cms.string( options.destinationConnection ),
-    preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS'),
+    preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS' 
+                                                   if not options.destinationConnection.startswith('sqlite') 
+                                                   else options.destinationConnection ),
+    ## preLoadConnectionString = cms.untracked.string('sqlite_file:../test/during/ls_during_9639_10005_8_dbg.db'),
+    ## preLoadConnectionString = cms.untracked.string('sqlite_file:../test/during/ls_during_9400.db'),
 
-    runNumber = cms.untracked.uint64(382454),
-    omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+    runNumber = cms.untracked.uint64(384468),
+    lastLumiFile = cms.untracked.string('/eos/home-j/jchyczyn/lhcinfo_summer23/CMSSW_14_1_0_pre3/src/CondTools/RunInfo/test/last_lumi.txt'),
+    # omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
     latency = cms.untracked.uint32(2),
-    ### autoCommit = cms.untracked.bool(True),
+    ### autoCommit = cms.untracked.bool(True),  
     ### jobName = cms.untracked.string(BSOnlineJobName), # name of the DB log record
     timetype = cms.untracked.string(timetype),
     toPut = cms.VPSet(cms.PSet(
