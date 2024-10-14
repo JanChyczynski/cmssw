@@ -76,9 +76,11 @@ if options.timetype not in supported_timetypes:
 for line in map(str.rstrip, sys.stdin):
     for iov in line.split():
         if options.record == "LHCInfoPerLS":
-            os.system(f"cmsRun {TEST_DIR}/LHCInfoPerLSAnalyzer_cfg.py db={options.db} tag={options.tag} timetype={options.timetype} \
-            csv={options.csv} header={options.header} separator={options.separator} iov={iov}")
+            os.system(f"cmsRun {TEST_DIR}/LHCInfoPerLSAnalyzer_cfg.py db={options.db} tag={options.tag} \
+                      csv={options.csv} header={options.header} separator={options.separator} \
+                      iov={iov} timetype={options.timetype} ")
         elif options.record == "LHCInfoPerFill":
-            os.system(f"cmsRun {TEST_DIR}/LHCInfoPerFillAnalyzer_cfg.py tag={options.tag} db={options.db} timestamp={iov}")
+            os.system(f"cmsRun {TEST_DIR}/LHCInfoPerFillAnalyzer_cfg.py tag={options.tag} db={options.db} \
+                      iov={iov} timetype={options.timetype}")
 
         options.header = False
