@@ -57,12 +57,12 @@ void LHCInfoPerLSAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSet
   if (csvFormat_) {
     auto s = separator_;
     if (header_) {
-      std::cout << "IOV" << s << "class" << s << "timestamp" << s << "runNumber" << s << "LS" << s << "xangleX" << s
-                << "xangleY" << s << "beta*X" << s << "beta*Y" << s << std::endl;
+      std::cout << "IOV" << s << "class" << s << "timestamp" << s << "fillNumber" << s << "runNumber" << s
+                << "LS" << s << "xangleX" << s << "xangleY" << s << "beta*X" << s << "beta*Y" << s << std::endl;
     }
-    std::cout << iov_ << s << "LHCInfoPerLS" << s << iEvent.time().unixTime() << s << infoPerLS.runNumber() << s
-              << infoPerLS.lumiSection() << s << infoPerLS.crossingAngleX() << s << infoPerLS.crossingAngleY() << s
-              << infoPerLS.betaStarX() << s << infoPerLS.betaStarY() << s << std::endl;
+    std::cout << iov_ << s << "LHCInfoPerLS" << s << iEvent.time().unixTime() << s << infoPerLS.fillNumber() << s
+              << infoPerLS.runNumber() << s << infoPerLS.lumiSection() << s << infoPerLS.crossingAngleX() << s 
+              << infoPerLS.crossingAngleY() << s << infoPerLS.betaStarX() << s << infoPerLS.betaStarY() << s << std::endl;
   } else {
     std::cout << "LHCInfoPerLS retrieved:\n" << infoPerLS << std::endl;
   }
