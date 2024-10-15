@@ -3,10 +3,6 @@ import FWCore.ParameterSet.Config as cms
 import FWCore.ParameterSet.VarParsing as VarParsing
 process = cms.Process("LHCInfoPerLSPopulator")
 from CondCore.CondDB.CondDB_cfi import *
-#process.load("CondCore.DBCommon.CondDBCommon_cfi")
-#process.CondDBCommon.connect = 'sqlite_file:lhcinfoperls_pop_test.db'
-#process.CondDBCommon.DBParameters.authenticationPath = '.'
-#process.CondDBCommon.DBParameters.messageLevel=cms.untracked.int32(1)
 
 sourceConnection = 'oracle://cms_omds_adg/CMS_RUNINFO_R'
 if socket.getfqdn().find('.cms') != -1:
@@ -60,12 +56,37 @@ options.register( 'endTime'
                      processes only fills starting before endTime;
                      default to empty string which sets no restriction"""
                   )
+
+#duringFill mode specific:
+options.register( 'lastLumiFile'
+                , ''
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.string
+                , """duringFill only: path to file with lumiid to override the last lumisection processed by HLT.
+                     Used for testing. Leave empty for production behaviour (getting this info from OMS)"""
+                  )
+options.register( 'frontierKey'
+                , ''
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.string
+                , """duringFill only: run-unique key for writing with OnlinePopCon
+                     (used for confirming proper upload)"""
+                  )
 options.register( 'debugLogic'
                 , False
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.bool
-                , """Enables debug logic, meant to be used only for tests"""
+                , """duringFill only: Enables debug logic, meant to be used only for tests"""
                   )
+
+# so far there was no need to use option, added just in case
+options.register( 'authenticationPath'
+                , ""
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.string
+                , """for now this option was always left empty"""
+                  )
+
 options.parseArguments()
 if options.mode is None:
   raise ValueError("mode argument not provided. Supported modes are: duringFill endFill")
@@ -74,6 +95,7 @@ if options.mode not in ("duringFill", "endFill"):
 
 CondDBConnection = CondDB.clone( connect = cms.string( options.destinationConnection ) )
 CondDBConnection.DBParameters.messageLevel = cms.untracked.int32( options.messageLevel )
+CondDBConnection.DBParameters.authenticationPath = cms.untracked.string(options.authenticationPath)
 
 process.MessageLogger = cms.Service("MessageLogger",
                                     cout = cms.untracked.PSet(threshold = cms.untracked.string('INFO')),
@@ -105,49 +127,38 @@ if options.mode == "endFill":
 else:
   process.OnlineDBOutputService = cms.Service("OnlineDBOutputService",
     CondDBConnection,
-    # TODO work in progress, what is commented out is what comes from beam_dqm_sourceclient-live_cfg.py 
-    # and I'm not sure if it's needed or what value it should have
-
-    # DBParameters = cms.PSet(
-    #                         messageLevel = cms.untracked.int32(0),
-    #                         authenticationPath = cms.untracked.string('.')
-    #                     ),
-
-    # connect =  cms.string( options.destinationConnection ),
     preLoadConnectionString = cms.untracked.string('frontier://FrontierProd/CMS_CONDITIONS' 
                                                    if not options.destinationConnection.startswith('sqlite') 
                                                    else options.destinationConnection ),
-    ## preLoadConnectionString = cms.untracked.string('sqlite_file:../test/during/ls_during_9639_10005_8_dbg.db'),
-    ## preLoadConnectionString = cms.untracked.string('sqlite_file:../test/during/ls_during_9400.db'),
-
-    runNumber = cms.untracked.uint64(384468),
-    lastLumiFile = cms.untracked.string('/eos/home-j/jchyczyn/lhcinfo_summer23/CMSSW_14_1_0_pre3/src/CondTools/RunInfo/test/last_lumi.txt'),
-    # omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'),
+    lastLumiFile = cms.untracked.string(options.lastLumiFile),
+    omsServiceUrl = cms.untracked.string('http://cmsoms-eventing.cms:9949/urn:xdaq-application:lid=100/getRunAndLumiSection'
+                                         if not options.lastLumiFile else "" ),
+    # runNumber = cms.untracked.uint64(384468), #not used in production, the last LS processed is set as the 1st LS of this
+                                                #run if the omsServiceUrl is empty and file specified in lastLumiFile is empty
     latency = cms.untracked.uint32(2),
-    ### autoCommit = cms.untracked.bool(True),  
-    ### jobName = cms.untracked.string(BSOnlineJobName), # name of the DB log record
     timetype = cms.untracked.string(timetype),
     toPut = cms.VPSet(cms.PSet(
         record = cms.string('LHCInfoPerLSRcd'),
         tag = cms.string( options.tag ),
         onlyAppendUpdatePolicy = cms.untracked.bool(True)
     )),
-    frontierKey = cms.untracked.string('wrong-key')
+    frontierKey = cms.untracked.string(options.frontierKey)
 )
 
 
-process.Test1 = cms.EDAnalyzer("LHCInfoPerLSPopConAnalyzer" if options.mode == "endFill" else "LHCInfoPerLSOnlinePopConAnalyzer",
+process.Test1 = cms.EDAnalyzer(("LHCInfoPerLSPopConAnalyzer" if options.mode == "endFill" 
+                               else "LHCInfoPerLSOnlinePopConAnalyzer"),
                                SinceAppendMode = cms.bool(True),
                                record = cms.string('LHCInfoPerLSRcd'),
                                name = cms.untracked.string('LHCInfo'),
-                               Source = cms.PSet(fill = cms.untracked.uint32(6417),
+                               Source = cms.PSet(
                                    startTime = cms.untracked.string(options.startTime),
                                    endTime = cms.untracked.string(options.endTime),
                                    endFill = cms.untracked.bool(options.mode == "endFill"),
                                    name = cms.untracked.string("LHCInfoPerLSPopConSourceHandler"),
                                    connectionString = cms.untracked.string("oracle://cms_orcon_adg/CMS_RUNTIME_LOGGER"),
                                    omsBaseUrl = cms.untracked.string("http://vocms0184.cern.ch/agg/api/v1"),
-                                   authenticationPath = cms.untracked.string(""),
+                                   authenticationPath = cms.untracked.string(options.authenticationPath),
                                    debug=cms.untracked.bool(False), # Additional logs
                                    debugLogic=cms.untracked.bool(options.debugLogic),
                                ),
