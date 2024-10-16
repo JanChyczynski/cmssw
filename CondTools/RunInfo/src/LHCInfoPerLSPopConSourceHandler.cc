@@ -274,11 +274,14 @@ void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
       else
         query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
 
-      bool foundFill = query->execute();
-      if (foundFill) 
-        foundFill = makeFillPayload(m_fillPayload, query->result());
+      bool querySuccess = query->execute();
+      if(!querySuccess){
+        edm::LogError(m_name) << "OMS fill query failed (http status not 200 nor 201). Request URL:\n"
+                              << query->url();
+      }
+      bool foundFill = querySuccess? makeFillPayload(m_fillPayload, query->result()) : False;
       
-      if (!foundFill) { //not the same as else!!! TODO refactor 'cos its unintuitive as hell
+      if (!foundFill) {
         if(m_endFillMode) {
           edm::LogInfo(m_name) << "No fill found - END of job.";
         } else { //duringFill mode
