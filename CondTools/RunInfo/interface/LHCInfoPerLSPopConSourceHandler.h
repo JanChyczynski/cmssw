@@ -21,6 +21,8 @@ public:
   static constexpr unsigned int kLumisectionsQueryLimit = 4000;
 
 private:
+  void populateIovs();
+  bool isPayloadValid(const LHCInfoPerLS& payload) const;
   void addEmptyPayload(cond::Time_t iov);
   void addDefaultPayload(cond::Time_t iov);
   bool makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload,
@@ -57,6 +59,10 @@ private:
   float m_defaultCrossingAngleY;
   float m_defaultBetaStarX;
   float m_defaultBetaStarY;
+  float m_minBetaStar;  // meters
+  float m_maxBetaStar;  // meters
+  float m_minCrossingAngle;  // urad
+  float m_maxCrossingAngle;  // urad
 
   std::unique_ptr<LHCInfoPerLS> m_fillPayload;
   std::shared_ptr<LHCInfoPerLS> m_prevPayload;

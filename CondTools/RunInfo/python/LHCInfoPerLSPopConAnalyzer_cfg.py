@@ -112,7 +112,25 @@ options.register( 'defaultBetaY'
                   )
 
 
-# so far there was no need to use option, added just in case
+# it's unlikely to ever use values different from the defaults, added as a parameter just in case
+options.register('minBetaStar',  0.1 
+                , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
+                , """duringFill only: [meters] min value of the range of valid values.
+                     If the value is outside of this range the payload is not uploaded""")
+options.register('maxBetaStar',  100.
+                , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
+                , """duringFill only: [meters] min value of the range of valid values.
+                     If the value is outside of this range the payload is not uploaded""")
+options.register('minCrossingAngle',  10.
+                , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
+                , """duringFill only: [urad] min value of the range of valid values.
+                     If the value is outside of this range the payload is not uploaded""")
+options.register('maxCrossingAngle',  500.
+                , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
+                , """duringFill only: [urad] min value of the range of valid values.
+                     If the value is outside of this range the payload is not uploaded""")
+
+# as the previous options, so far there was no need to use option, added just in case
 options.register( 'authenticationPath'
                 , ""
                 , VarParsing.VarParsing.multiplicity.singleton
