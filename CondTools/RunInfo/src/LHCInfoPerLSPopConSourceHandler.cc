@@ -126,6 +126,10 @@ LHCInfoPerLSPopConSourceHandler::LHCInfoPerLSPopConSourceHandler(edm::ParameterS
       m_defaultCrossingAngleY(pset.getUntrackedParameter<double>("defaultCrossingAngleY", 0)),
       m_defaultBetaStarX(pset.getUntrackedParameter<double>("defaultBetaStarX", 0)),
       m_defaultBetaStarY(pset.getUntrackedParameter<double>("defaultBetaStarY", 0)),
+      m_minBetaStar(pset.getUntrackedParameter<double>("minBetaStar",  0.1)),
+      m_maxBetaStar(pset.getUntrackedParameter<double>("maxBetaStar",  100.)),
+      m_minCrossingAngle(pset.getUntrackedParameter<double>("minCrossingAngle",  10.)),
+      m_maxCrossingAngle(pset.getUntrackedParameter<double>("maxCrossingAngle",  500.)),
       m_fillPayload(),
       m_prevPayload(),
       m_tmpBuffer() {
@@ -147,6 +151,33 @@ LHCInfoPerLSPopConSourceHandler::LHCInfoPerLSPopConSourceHandler(edm::ParameterS
 LHCInfoPerLSPopConSourceHandler::~LHCInfoPerLSPopConSourceHandler() = default;
 
 void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
+  populateIovs();
+  if(m_endFillMode) return;
+  //duringFill mode:
+  auto it = m_iovs.begin();
+  while (it != m_iovs.end()) {
+    if (!isPayloadValid(*(it->second))) {
+      edm::LogWarning(m_name) << "Skipping upload of payload with invalid values"; // TODO print the values 
+      m_iovs.erase(it++);    // note: post-increment necessary to avoid using invalidated iterators
+    } else {
+      ++it;
+    }
+  }
+}
+
+bool LHCInfoPerLSPopConSourceHandler::isPayloadValid(const LHCInfoPerLS& payload) const {
+  if ((payload.crossingAngleX() == 0. && payload.crossingAngleY() == 0.) ||
+      (payload.crossingAngleX() != 0. && payload.crossingAngleY() != 0.))
+    return false;
+  auto non0CrossingAngle = payload.crossingAngleX() != 0. ? payload.crossingAngleX() : payload.crossingAngleY();
+  if ((non0CrossingAngle < m_minCrossingAngle || m_maxCrossingAngle < non0CrossingAngle) ||
+      (payload.betaStarX() < m_minBetaStar || m_maxBetaStar < payload.betaStarX()) || 
+      (payload.betaStarX() < m_minBetaStar || m_maxBetaStar < payload.betaStarX()))  
+    return false;
+  return true;
+}
+
+void LHCInfoPerLSPopConSourceHandler::populateIovs() {
   //if a new tag is created, transfer fake fill from 1 to the first fill for the first time
   if (tagInfo().size == 0) {
     edm::LogInfo(m_name) << "New tag " << tagInfo().name << "; from " << m_name << "::getNewObjects";
@@ -279,7 +310,7 @@ void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
         edm::LogError(m_name) << "OMS fill query failed (http status not 200 nor 201). Request URL:\n"
                               << query->url();
       }
-      bool foundFill = querySuccess? makeFillPayload(m_fillPayload, query->result()) : False;
+      bool foundFill = querySuccess? makeFillPayload(m_fillPayload, query->result()) : false;
       
       if (!foundFill) {
         if(m_endFillMode) {
@@ -332,8 +363,8 @@ void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
               << "The buffered payload has the same data as the previous payload in the tag. It will not be written.";
         }
       } else if (m_tmpBuffer.empty()) {
-        addDefaultPayload(
-            cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));  //the IOV doesn't matter when using OnlinePopCon
+        // note: the IOV doesn't matter when using OnlinePopCon:
+        addDefaultPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));  
       }
     }
 
