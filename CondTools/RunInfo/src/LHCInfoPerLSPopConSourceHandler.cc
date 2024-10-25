@@ -152,14 +152,27 @@ LHCInfoPerLSPopConSourceHandler::~LHCInfoPerLSPopConSourceHandler() = default;
 
 void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
   populateIovs();
-  if(m_endFillMode) return;
-  //duringFill mode:
+  if(!m_endFillMode) { // duringFill mode
+    filterInvalidPayloads();
+  }
+}
+
+void LHCInfoPerLSPopConSourceHandler::filterInvalidPayloads() {
+  // note: at the moment used only in duringFill mode so the m_iovs is quaranteed to have size() <= 1
+  // but iterating through the whole map is implemented just in case the way it's used changes
   auto it = m_iovs.begin();
   while (it != m_iovs.end()) {
+    std::stringstream payloadData;
+    payloadData << "LS = " << it->second->lumiSection() <<", run = " << it->second->runNumber() << ", "
+                << "xAngleX = " << it->second->crossingAngleX() << " urad, "
+                << "xAngleY = " << it->second->crossingAngleY() << " urad, "
+                << "beta*X = " << it->second->betaStarX() << " m, "
+                << "beta*Y = " << it->second->betaStarY() << " m";
     if (!isPayloadValid(*(it->second))) {
-      edm::LogWarning(m_name) << "Skipping upload of payload with invalid values"; // TODO print the values 
+      edm::LogWarning(m_name) << "Skipping upload of payload with invalid values: " << payloadData.str();
       m_iovs.erase(it++);    // note: post-increment necessary to avoid using invalidated iterators
     } else {
+      edm::LogInfo(m_name) << "Payload to be uploaded: " << payloadData.str();
       ++it;
     }
   }
@@ -196,6 +209,12 @@ void LHCInfoPerLSPopConSourceHandler::populateIovs() {
     if (m_endFillMode) {
       addEmptyPayload(1);
       lastSince = 1;
+    } else { //duringFill mode
+      edm::LogInfo(m_name) << "Empty or new tag: uploading a default payload and ending the job";
+      cond::OMSService oms;
+      oms.connect(m_omsBaseUrl);
+      addDefaultPayload(1, 1, 1, 1);
+      return;
     }
   } else {
     edm::LogInfo(m_name) << "The last Iov in tag " << tagInfo().name << " valid since " << lastSince << "from "
@@ -317,7 +336,7 @@ void LHCInfoPerLSPopConSourceHandler::populateIovs() {
           edm::LogInfo(m_name) << "No fill found - END of job.";
         } else { //duringFill mode
           edm::LogInfo(m_name) << "No ongoing fill found.";
-          addDefaultPayload(1); //IOV doesn't matter here in duringFill mode
+          addDefaultPayload(1, m_prevPayload->fillNumber(), oms); //IOV doesn't matter here in duringFill mode
         }
         break;
       }
@@ -364,7 +383,7 @@ void LHCInfoPerLSPopConSourceHandler::populateIovs() {
         }
       } else if (m_tmpBuffer.empty()) {
         // note: the IOV doesn't matter when using OnlinePopCon:
-        addDefaultPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));  
+        addDefaultPayload(1, lhcFill, oms);  
       }
     }
 
@@ -415,23 +434,29 @@ void LHCInfoPerLSPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
   }
 }
 
-void LHCInfoPerLSPopConSourceHandler::addDefaultPayload(cond::Time_t iov) {
+void LHCInfoPerLSPopConSourceHandler::addDefaultPayload(cond::Time_t iov, unsigned short fill, const cond::OMSService& oms) {
   auto defaultPayload = std::make_shared<LHCInfoPerLS>();
-  defaultPayload->setFillNumber(m_prevPayload->fillNumber());
-  // cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill) - >  convert to run and LS;
-  defaultPayload->setRunNumber(0); //TODO fix
-  defaultPayload->setLumiSection(0); //TODO fix
+  defaultPayload->setFillNumber(fill);
+  auto [lastRun, lastLumi] = cond::lhcInfoHelper::getFillLastRunAndLS(oms, fill);
+  addDefaultPayload(iov, fill, lastRun, lastLumi);
+}
+
+void LHCInfoPerLSPopConSourceHandler::addDefaultPayload(cond::Time_t iov, unsigned short fill, int run, unsigned short lumi) {
+  auto defaultPayload = std::make_shared<LHCInfoPerLS>();
+  defaultPayload->setFillNumber(fill);
+  defaultPayload->setRunNumber(run);
+  defaultPayload->setLumiSection(lumi);
   defaultPayload->setCrossingAngleX(m_defaultCrossingAngleX);
   defaultPayload->setCrossingAngleY(m_defaultCrossingAngleY);
   defaultPayload->setBetaStarX(m_defaultBetaStarX);
   defaultPayload->setBetaStarY(m_defaultBetaStarY);
 
-  if (theLHCInfoPerLSImpl::comparePayloads(*defaultPayload, *m_prevPayload)) {
+  if (m_prevPayload && theLHCInfoPerLSImpl::comparePayloads(*defaultPayload, *m_prevPayload)) {
     edm::LogInfo(m_name)
         << "The default payload has the same data as the previous payload in the tag. It will not be written.";
   } else {
     m_iovs.insert(make_pair(iov, defaultPayload));
-    edm::LogInfo(m_name) << "Uploading the default payload (valeues...)."; //TODO
+    edm::LogInfo(m_name) << "Uploading the default payload."; 
   }
 }
 

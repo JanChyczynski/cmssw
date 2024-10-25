@@ -22,9 +22,11 @@ public:
 
 private:
   void populateIovs();
+  void filterInvalidPayloads();
   bool isPayloadValid(const LHCInfoPerLS& payload) const;
   void addEmptyPayload(cond::Time_t iov);
-  void addDefaultPayload(cond::Time_t iov);
+  void addDefaultPayload(cond::Time_t iov, unsigned short fill, const cond::OMSService& oms);
+  void addDefaultPayload(cond::Time_t iov, unsigned short fill, int run, unsigned short lumi);
   bool makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload,
                        const cond::OMSServiceResult& queryResult);
   void addPayloadToBuffer(cond::OMSServiceResultRef& row);

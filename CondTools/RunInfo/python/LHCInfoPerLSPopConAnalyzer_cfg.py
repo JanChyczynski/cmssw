@@ -72,41 +72,48 @@ options.register( 'frontierKey'
                 , """duringFill only: run-unique key for writing with OnlinePopCon
                      (used for confirming proper upload)"""
                   )
+options.register('offsetLS'
+                , 2
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.int
+                , """duringFill only: offset between lastLumi (last LS processed by HLT or overriden by lastLumiFile)
+                     and the IOV of the payload to be uploaded"""
+                  )
 options.register( 'debugLogic'
                 , False
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.bool
                 , """duringFill only: Enables debug logic, meant to be used only for tests"""
                   )
-options.register( 'defaultXangleX' #TODO put units here
-                , 160.0
+options.register( 'defaultXangleX'
+                , 160.0 # urad
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.float
-                , """duringFill only: crossingAngleX value for the default payload.
+                , """duringFill only: crossingAngleX value (in urad) for the default payload.
                      The default payload is inserted after the last processed fill has ended
                      and there's no ongoing stable beam yet. """
                   )
 options.register( 'defaultXangleY'
-                , 0.0
+                , 0.0 # urad
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.float
-                , """duringFill only: crossingAngleY value for the default payload.
+                , """duringFill only: crossingAngleY value (in urad) for the default payload.
                      The default payload is inserted after the last processed fill has ended
                      and there's no ongoing stable beam yet. """
                   )
 options.register( 'defaultBetaX'
-                , 0.3
+                , 0.3 # meters
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.float
-                , """duringFill only: betaStarX value for the default payload.
+                , """duringFill only: betaStarX value (in meters) for the default payload.
                      The default payload is inserted after the last processed fill has ended
                      and there's no ongoing stable beam yet. """
                   )
 options.register( 'defaultBetaY'
-                , 0.3
+                , 0.3 # meters
                 , VarParsing.VarParsing.multiplicity.singleton
                 , VarParsing.VarParsing.varType.float
-                , """duringFill only: betaStarY value for the default payload.
+                , """duringFill only: betaStarY value (in meters) for the default payload.
                      The default payload is inserted after the last processed fill has ended
                      and there's no ongoing stable beam yet. """
                   )
@@ -186,7 +193,7 @@ else:
                                          if not options.lastLumiFile else "" ),
     # runNumber = cms.untracked.uint64(384468), #not used in production, the last LS processed is set as the 1st LS of this
                                                 #run if the omsServiceUrl is empty and file specified in lastLumiFile is empty
-    latency = cms.untracked.uint32(2),
+    latency = cms.untracked.uint32(options.offsetLS),
     timetype = cms.untracked.string(timetype),
     toPut = cms.VPSet(cms.PSet(
         record = cms.string('LHCInfoPerLSRcd'),
@@ -216,6 +223,10 @@ process.Test1 = cms.EDAnalyzer(("LHCInfoPerLSPopConAnalyzer" if options.mode == 
                                    defaultCrossingAngleY = cms.untracked.double(options.defaultXangleY),
                                    defaultBetaStarX = cms.untracked.double(options.defaultBetaX),
                                    defaultBetaStarY = cms.untracked.double(options.defaultBetaY),
+                                   minBetaStar = cms.untracked.double(options.minBetaStar),
+                                   maxBetaStar = cms.untracked.double(options.maxBetaStar),
+                                   minCrossingAngle = cms.untracked.double(options.minCrossingAngle),
+                                   maxCrossingAngle = cms.untracked.double(options.maxCrossingAngle),
                                ),
                                loggingOn = cms.untracked.bool(True),
                                IsDestDbCheckedInQueryLog = cms.untracked.bool(False)
