@@ -1,10 +1,27 @@
-#include "CondCore/PopCon/interface/PopConAnalyzer.h"
 #include "CondTools/RunInfo/interface/LHCInfoPerLSPopConSourceHandler.h"
-#include "FWCore/Framework/interface/MakerMacros.h"
+#include "CondCore/CondDB/interface/ConnectionPool.h"
+#include "CondCore/CondDB/interface/Types.h"
+#include "CondFormats/Common/interface/TimeConversions.h"
+#include "CondTools/RunInfo/interface/LHCInfoHelper.h"
+#include "CondTools/RunInfo/interface/OMSAccess.h"
+#include "CoralBase/Attribute.h"
+#include "CoralBase/AttributeList.h"
+#include "CoralBase/AttributeSpecification.h"
+#include "CoralBase/TimeStamp.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "RelationalAccess/ICursor.h"
+#include "RelationalAccess/IQuery.h"
+#include "RelationalAccess/ISchema.h"
+#include "RelationalAccess/ISessionProxy.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <sstream>
 
-using LHCInfoPerLSPopConAnalyzer = popcon::PopConAnalyzer<LHCInfoPerLSPopConSourceHandler>;
 
-DEFINE_FWK_MODULE(LHCInfoPerLSPopConAnalyzer);
+using std::make_pair;
+using std::pair;
+
+
 
 namespace theLHCInfoPerLSImpl {
   bool comparePayloads(const LHCInfoPerLS& rhs, const LHCInfoPerLS& lhs) {
@@ -13,8 +30,8 @@ namespace theLHCInfoPerLSImpl {
         rhs.betaStarX() != lhs.betaStarX() || rhs.betaStarY() != lhs.betaStarY()) {
       return false;
     }
-    return true;
-  }
+    return true;  
+    }
 
   size_t transferPayloads(const std::vector<pair<cond::Time_t, std::shared_ptr<LHCInfoPerLS>>>& buffer,
                           std::map<cond::Time_t, std::shared_ptr<LHCInfoPerLS>>& iovsToTransfer,
@@ -22,7 +39,7 @@ namespace theLHCInfoPerLSImpl {
                           const std::map<pair<cond::Time_t, unsigned int>, pair<cond::Time_t, unsigned int>>& lsIdMap,
                           cond::Time_t startStableBeamTime,
                           cond::Time_t endStableBeamTime) {
-    int lsMissingInPPS = 0;
+int lsMissingInPPS = 0;
     int xAngleBothZero = 0, xAngleBothNonZero = 0, xAngleNegative = 0;
     int betaNegative = 0;
     size_t niovs = 0;
@@ -98,36 +115,38 @@ namespace theLHCInfoPerLSImpl {
 
 }  // namespace theLHCInfoPerLSImpl
 
-class LHCInfoPerLSPopConSourceHandler : public popcon::PopConSourceHandler<LHCInfoPerLS> {
-public:
-  LHCInfoPerLSPopConSourceHandler(edm::ParameterSet const& pset)
-      : m_debug(pset.getUntrackedParameter<bool>("debug", false)),
-        m_startTime(),
-        m_endTime(),
-        m_endFillMode(pset.getUntrackedParameter<bool>("endFill", true)),
-        m_name(pset.getUntrackedParameter<std::string>("name", "LHCInfoPerLSPopConSourceHandler")),
-        m_connectionString(pset.getUntrackedParameter<std::string>("connectionString", "")),
-        m_authpath(pset.getUntrackedParameter<std::string>("authenticationPath", "")),
-        m_omsBaseUrl(pset.getUntrackedParameter<std::string>("omsBaseUrl", "")),
-        m_debugLogic(pset.getUntrackedParameter<bool>("debugLogic", false)),
-        m_fillPayload(),
-        m_prevPayload(),
-        m_tmpBuffer() {
-    if (!pset.getUntrackedParameter<std::string>("startTime").empty()) {
-      m_startTime = boost::posix_time::time_from_string(pset.getUntrackedParameter<std::string>("startTime"));
-    }
-    boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
-    m_endTime = now;
-    if (!pset.getUntrackedParameter<std::string>("endTime").empty()) {
-      m_endTime = boost::posix_time::time_from_string(pset.getUntrackedParameter<std::string>("endTime"));
-      if (m_endTime > now)
-        m_endTime = now;
-    }
+
+LHCInfoPerLSPopConSourceHandler::LHCInfoPerLSPopConSourceHandler(edm::ParameterSet const& pset)
+    : m_debug(pset.getUntrackedParameter<bool>("debug", false)),
+      m_startTime(),
+      m_endTime(),
+      m_endFillMode(pset.getUntrackedParameter<bool>("endFill", true)),
+      m_name(pset.getUntrackedParameter<std::string>("name", "LHCInfoPerLSPopConSourceHandler")),
+      m_connectionString(pset.getUntrackedParameter<std::string>("connectionString", "")),
+      m_authpath(pset.getUntrackedParameter<std::string>("authenticationPath", "")),
+      m_omsBaseUrl(pset.getUntrackedParameter<std::string>("omsBaseUrl", "")),
+      m_debugLogic(pset.getUntrackedParameter<bool>("debugLogic", false)),
+      m_fillPayload(),
+      m_prevPayload(),
+      m_tmpBuffer() {
+  if (!pset.getUntrackedParameter<std::string>("startTime").empty()) {
+    m_startTime = boost::posix_time::time_from_string(pset.getUntrackedParameter<std::string>("startTime"));
   }
+  boost::posix_time::ptime now = boost::posix_time::second_clock::local_time();
+  m_endTime = now;
+  if (!pset.getUntrackedParameter<std::string>("endTime").empty()) {
+    m_endTime = boost::posix_time::time_from_string(pset.getUntrackedParameter<std::string>("endTime"));
+    if (m_endTime > now)
+      m_endTime = now;
+  }
+  if (m_debugLogic && m_endFillMode) {
+    throw cms::Exception("invalid argument") << "debugLogic == true not supported for endFillMode == true";
+  }
+}
 
-  ~LHCInfoPerLSPopConSourceHandler() override = default;
+LHCInfoPerLSPopConSourceHandler::~LHCInfoPerLSPopConSourceHandler() = default;
 
-  void getNewObjects() override {
+void LHCInfoPerLSPopConSourceHandler::getNewObjects() {
     //if a new tag is created, transfer fake fill from 1 to the first fill for the first time
     if (tagInfo().size == 0) {
       edm::LogInfo(m_name) << "New tag " << tagInfo().name << "; from " << m_name << "::getNewObjects";
@@ -253,6 +272,9 @@ public:
         query->filterLT("start_time", m_endTime);
         if (m_endFillMode)
           query->filterNotNull("end_time");
+        else 
+          query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
+
         bool foundFill = query->execute();
         if (foundFill)
           foundFill = makeFillPayload(m_fillPayload, query->result());
@@ -293,7 +315,7 @@ public:
 
       if(!m_endFillMode) {
         if(m_tmpBuffer.size() > 1) {
-          throw cms::Exception("LHCInfoPerLSPopConSourceHandler")
+          throw cms::Exception("LHCInfoPerFillPopConSourceHandler")
             << "More than 1 payload buffered for writing in duringFill mode.\
            In this mode only up to 1 payload can be written";
         } else if (m_tmpBuffer.size() == 1) {
@@ -324,62 +346,59 @@ public:
       if (m_prevPayload->fillNumber() and !ongoingFill) {
         if (m_endFillMode) {
           addEmptyPayload(m_endFillTime);
-        } else {
-          addEmptyPayload(cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));
         }
       }
     }
   }
-  std::string id() const override { return m_name; }
 
-  static constexpr unsigned int kLumisectionsQueryLimit = 4000;
+std::string LHCInfoPerLSPopConSourceHandler::id() const { return m_name; }
 
-private:
-  void addEmptyPayload(cond::Time_t iov) {
-    bool add = false;
-    if (m_iovs.empty()) {
-      if (!m_lastPayloadEmpty)
-        add = true;
+
+void LHCInfoPerLSPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
+  bool add = false;
+  if (m_iovs.empty()) {
+    if (!m_lastPayloadEmpty)
+      add = true;
+  } else {
+    auto lastAdded = m_iovs.rbegin()->second;
+    if (lastAdded->fillNumber() != 0) {
+      add = true;
+    }
+  }
+  if (add) {
+    auto newPayload = std::make_shared<LHCInfoPerLS>();
+    m_iovs.insert(make_pair(iov, newPayload));
+    m_prevPayload = newPayload;
+    m_prevEndFillTime = 0;
+    m_prevStartFillTime = 0;
+    edm::LogInfo(m_name) << "Added empty payload with IOV" << iov << " ( "
+                         << boost::posix_time::to_iso_extended_string(cond::time::to_boost(iov)) << " )";
+  }
+}
+
+bool LHCInfoPerLSPopConSourceHandler::makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload, const cond::OMSServiceResult& queryResult) {
+  bool ret = false;
+  if (!queryResult.empty()) {
+    auto row = *queryResult.begin();
+    auto currentFill = row.get<unsigned short>("fill_number");
+    m_startFillTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("start_time"));
+    std::string endTimeStr = row.get<std::string>("end_time");
+    if (m_debugLogic) {
+      m_endFillTime = 0;
     } else {
-      auto lastAdded = m_iovs.rbegin()->second;
-      if (lastAdded->fillNumber() != 0) {
-        add = true;
-      }
+      m_endFillTime =
+          (endTimeStr == "null") ? 0 : cond::time::from_boost(row.get<boost::posix_time::ptime>("end_time"));
     }
-    if (add) {
-      auto newPayload = std::make_shared<LHCInfoPerLS>();
-      m_iovs.insert(make_pair(iov, newPayload));
-      m_prevPayload = newPayload;
-      m_prevEndFillTime = 0;
-      m_prevStartFillTime = 0;
-      edm::LogInfo(m_name) << "Added empty payload with IOV" << iov << " ( "
-                           << boost::posix_time::to_iso_extended_string(cond::time::to_boost(iov)) << " )";
-    }
+    m_startStableBeamTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("start_stable_beam"));
+    m_endStableBeamTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("end_stable_beam"));
+    targetPayload = std::make_unique<LHCInfoPerLS>();
+    targetPayload->setFillNumber(currentFill);
+    ret = true;
   }
+  return ret;
+}
 
-  bool makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload, const cond::OMSServiceResult& queryResult) {
-    bool ret = false;
-    if (!queryResult.empty()) {
-      auto row = *queryResult.begin();
-      auto currentFill = row.get<unsigned short>("fill_number");
-      m_startFillTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("start_time"));
-      std::string endTimeStr = row.get<std::string>("end_time");
-      if (m_debugLogic) {
-        m_endFillTime = 0;
-      } else {
-        m_endFillTime =
-            (endTimeStr == "null") ? 0 : cond::time::from_boost(row.get<boost::posix_time::ptime>("end_time"));
-      }
-      m_startStableBeamTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("start_stable_beam"));
-      m_endStableBeamTime = cond::time::from_boost(row.get<boost::posix_time::ptime>("end_stable_beam"));
-      targetPayload = std::make_unique<LHCInfoPerLS>();
-      targetPayload->setFillNumber(currentFill);
-      ret = true;
-    }
-    return ret;
-  }
-
-  void addPayloadToBuffer(cond::OMSServiceResultRef& row) {
+void LHCInfoPerLSPopConSourceHandler::addPayloadToBuffer(cond::OMSServiceResultRef& row) {
     auto lumiTime = row.get<boost::posix_time::ptime>("start_time");
     LHCInfoPerLS* thisLumiSectionInfo = new LHCInfoPerLS(*m_fillPayload);
     thisLumiSectionInfo->setLumiSection(std::stoul(row.get<std::string>("lumisection_number")));
@@ -394,14 +413,14 @@ private:
     }
   }
 
-  size_t bufferAllLS(const cond::OMSServiceResult& queryResult) {
+size_t LHCInfoPerLSPopConSourceHandler::bufferAllLS(const cond::OMSServiceResult& queryResult) {
     for (auto r : queryResult) {
       addPayloadToBuffer(r);
     }
     return queryResult.size();
   }
 
-  size_t getLumiData(const cond::OMSService& oms,
+size_t LHCInfoPerLSPopConSourceHandler::getLumiData(const cond::OMSService& oms,
                      unsigned short fillId,
                      const boost::posix_time::ptime& beginFillTime,
                      const boost::posix_time::ptime& endFillTime) {
@@ -431,8 +450,7 @@ private:
     }
     return nlumi;
   }
-
-  bool getCTPPSData(cond::persistency::Session& session,
+bool LHCInfoPerLSPopConSourceHandler::getCTPPSData(cond::persistency::Session& session,
                     const boost::posix_time::ptime& beginFillTime,
                     const boost::posix_time::ptime& endFillTime) {
     //run the fifth query against the CTPPS schema
@@ -552,32 +570,3 @@ private:
     return ret;
   }
 
-private:
-  bool m_debug;
-  // starting date for sampling
-  boost::posix_time::ptime m_startTime;
-  boost::posix_time::ptime m_endTime;
-  bool m_endFillMode = true;
-  std::string m_name;
-  //for reading from relational database source
-  std::string m_connectionString;
-  std::string m_authpath;
-  std::string m_omsBaseUrl;
-  //makes duringFill interpret finished fills as ongoing fills and writing their last LS
-  // (disabling the check if the last LS is in stable beams, although still only fills with stable beams are being processed)
-  // also, it doesn't write empty payload at the end of a finished fill (because it's interpreted as ongoing)
-  const bool m_debugLogic;
-  std::unique_ptr<LHCInfoPerLS> m_fillPayload;
-  std::shared_ptr<LHCInfoPerLS> m_prevPayload;
-  cond::Time_t m_startFillTime;
-  cond::Time_t m_endFillTime;
-  cond::Time_t m_prevEndFillTime;
-  cond::Time_t m_prevStartFillTime;
-  cond::Time_t m_startStableBeamTime;
-  cond::Time_t m_endStableBeamTime;
-  std::vector<pair<cond::Time_t, std::shared_ptr<LHCInfoPerLS>>> m_tmpBuffer;
-  bool m_lastPayloadEmpty = false;
-  //mapping of lumisections IDs (pairs of runnumber an LS number) found in OMS to the IDs they've been assignd from PPS DB
-  //value pair(-1, -1) means lumisection corresponding to the key exists in OMS but no lumisection was matched from PPS
-  std::map<pair<cond::Time_t, unsigned int>, pair<cond::Time_t, unsigned int>> m_lsIdMap;
-};
