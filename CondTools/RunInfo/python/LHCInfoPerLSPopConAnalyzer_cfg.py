@@ -78,6 +78,39 @@ options.register( 'debugLogic'
                 , VarParsing.VarParsing.varType.bool
                 , """duringFill only: Enables debug logic, meant to be used only for tests"""
                   )
+options.register( 'defaultXangleX' #TODO put units here
+                , 160.0
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.float
+                , """duringFill only: crossingAngleX value for the default payload.
+                     The default payload is inserted after the last processed fill has ended
+                     and there's no ongoing stable beam yet. """
+                  )
+options.register( 'defaultXangleY'
+                , 0.0
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.float
+                , """duringFill only: crossingAngleY value for the default payload.
+                     The default payload is inserted after the last processed fill has ended
+                     and there's no ongoing stable beam yet. """
+                  )
+options.register( 'defaultBetaX'
+                , 0.3
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.float
+                , """duringFill only: betaStarX value for the default payload.
+                     The default payload is inserted after the last processed fill has ended
+                     and there's no ongoing stable beam yet. """
+                  )
+options.register( 'defaultBetaY'
+                , 0.3
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.float
+                , """duringFill only: betaStarY value for the default payload.
+                     The default payload is inserted after the last processed fill has ended
+                     and there's no ongoing stable beam yet. """
+                  )
+
 
 # so far there was no need to use option, added just in case
 options.register( 'authenticationPath'
@@ -161,6 +194,10 @@ process.Test1 = cms.EDAnalyzer(("LHCInfoPerLSPopConAnalyzer" if options.mode == 
                                    authenticationPath = cms.untracked.string(options.authenticationPath),
                                    debug=cms.untracked.bool(False), # Additional logs
                                    debugLogic=cms.untracked.bool(options.debugLogic),
+                                   defaultCrossingAngleX = cms.untracked.double(options.defaultXangleX),
+                                   defaultCrossingAngleY = cms.untracked.double(options.defaultXangleY),
+                                   defaultBetaStarX = cms.untracked.double(options.defaultBetaX),
+                                   defaultBetaStarY = cms.untracked.double(options.defaultBetaY),
                                ),
                                loggingOn = cms.untracked.bool(True),
                                IsDestDbCheckedInQueryLog = cms.untracked.bool(False)
