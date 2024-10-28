@@ -235,9 +235,11 @@ void LHCInfoPerFillPopConSourceHandler::getNewObjects() {
   cond::Time_t lastSince = tagInfo().lastInterval.since;
   if (tagInfo().isEmpty()) {
     // for a new or empty tag in endFill mode, an empty payload should be added on top with since=1
-    if (m_endFillMode) {
-      addEmptyPayload(1);
-      lastSince = 1;
+    addEmptyPayload(1);
+    lastSince = 1;
+    if (!m_endFillMode) {
+      edm::LogInfo(m_name) << "Empty or new tag: uploading a default payload and ending the job";
+      return;
     }
   } else {
     edm::LogInfo(m_name) << "The last Iov in tag " << tagInfo().name << " valid since " << lastSince << "from "
@@ -383,8 +385,6 @@ void LHCInfoPerFillPopConSourceHandler::getNewObjects() {
 }
 
 std::string LHCInfoPerFillPopConSourceHandler::id() const { return m_name; }
-
-static constexpr unsigned int kLumisectionsQueryLimit = 4000;
 
 void LHCInfoPerFillPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
   bool add = false;
