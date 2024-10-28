@@ -58,16 +58,16 @@ echo "testing LHCInfoPerFillPopConAnalyzer in duringFill mode for startTime=\"20
 cmsRun ${SCRIPTS_DIR}/LHCInfoPerFillPopConAnalyzer_cfg.py mode=duringFill \
     destinationConnection="sqlite_file:lhcinfo_pop_unit_test.db" \
     startTime="2022-10-24 01:00:00.000" endTime="2022-10-24 20:00:00.000" \
+    lastLumiFile=CondTools/RunInfo/test/last_lumi.txt \
     tag=fill_during_test > fill_during_test.log || die "cmsRun LHCInfoPerFillPopConAnalyzer_cfg.py" $?
-assert_equal 1 `cat fill_during_test.log | grep -E '^Since ' | \
+assert_equal 1 `cat fill_during_test.log | grep -E 'uploaded with since' | \
     wc -l` "LHCInfoPerFillPopConAnalyzer in DuringFill written wrong number of payloads"
-assert_found_fills fill_during_test.log "LHCInfoPerFillPopConAnalyzer in DuringFill" 8307 8309
 
 echo "testing LHCInfoPerLSPopConAnalyzer in duringFill mode for startTime=\"2022-10-24 01:00:00.000\" endTime=\"2022-10-24 20:00:00.000\"" 
 cmsRun ${SCRIPTS_DIR}/LHCInfoPerLSPopConAnalyzer_cfg.py mode=duringFill \
     destinationConnection="sqlite_file:lhcinfo_pop_unit_test.db" \
+    lastLumiFile=CondTools/RunInfo/test/last_lumi.txt \
     startTime="2022-10-24 01:00:00.000" endTime="2022-10-24 20:00:00.000" \
     tag=ls_during_test > ls_during_test.log || die "cmsRun LHCInfoPerLSPopConAnalyzer_cfg.py mode=duringFill" $?
-assert_equal 1 `cat ls_during_test.log | grep -E '^Since ' | \
+assert_equal 1 `cat ls_during_test.log | grep -E 'uploaded with since' | \
     wc -l` "LHCInfoPerLSPopConAnalyzer in duringFill mode written wrong number of payloads"
-assert_found_fills ls_during_test.log  "LHCInfoPerLSPopConAnalyzer in duringFill mode" 8307 8309

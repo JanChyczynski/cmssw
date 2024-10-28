@@ -6,7 +6,8 @@
 // last LS of last Run of the specified Fill
 //*****************************************************************
 
-std::pair<int, unsigned short> cond::lhcInfoHelper::getFillLastRunAndLS(const cond::OMSService& oms, unsigned short fillId) {
+std::pair<int, unsigned short> cond::lhcInfoHelper::getFillLastRunAndLS(const cond::OMSService& oms,
+                                                                        unsigned short fillId) {
   // Define query
   auto query = oms.query("lumisections");
   query->addOutputVars({"lumisection_number", "run_number"});
@@ -28,7 +29,7 @@ std::pair<int, unsigned short> cond::lhcInfoHelper::getFillLastRunAndLS(const co
   // Return the final IOV
   auto lastRun = queryResult.back().get<int>("run_number");
   auto lastLumi = queryResult.back().get<unsigned short>("lumisection_number");
-    return std::make_pair(lastRun, lastLumi);
+  return std::make_pair(lastRun, lastLumi);
 }
 
 cond::Time_t cond::lhcInfoHelper::getFillLastLumiIOV(const cond::OMSService& oms, unsigned short fillId) {

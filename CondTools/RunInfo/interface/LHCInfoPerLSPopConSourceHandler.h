@@ -27,8 +27,7 @@ private:
   void addEmptyPayload(cond::Time_t iov);
   void addDefaultPayload(cond::Time_t iov, unsigned short fill, const cond::OMSService& oms);
   void addDefaultPayload(cond::Time_t iov, unsigned short fill, int run, unsigned short lumi);
-  bool makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload,
-                       const cond::OMSServiceResult& queryResult);
+  bool makeFillPayload(std::unique_ptr<LHCInfoPerLS>& targetPayload, const cond::OMSServiceResult& queryResult);
   void addPayloadToBuffer(cond::OMSServiceResultRef& row);
   size_t bufferAllLS(const cond::OMSServiceResult& queryResult);
   size_t getLumiData(const cond::OMSService& oms,
@@ -61,8 +60,8 @@ private:
   float m_defaultCrossingAngleY;
   float m_defaultBetaStarX;
   float m_defaultBetaStarY;
-  float m_minBetaStar;  // meters
-  float m_maxBetaStar;  // meters
+  float m_minBetaStar;       // meters
+  float m_maxBetaStar;       // meters
   float m_minCrossingAngle;  // urad
   float m_maxCrossingAngle;  // urad
 
