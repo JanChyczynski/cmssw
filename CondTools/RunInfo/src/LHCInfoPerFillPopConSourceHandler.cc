@@ -448,7 +448,7 @@ size_t LHCInfoPerFillPopConSourceHandler::getLumiData(const cond::OMSService& om
   query->filterEQ("fill_number", fillId);
   query->filterGT("start_time", beginFillTime).filterLT("start_time", endFillTime);
   query->filterEQ("beams_stable", "true");
-  query->limit(kLumisectionsQueryLimit);
+  query->limit(cond::lhcInfoHelper::kLumisectionsQueryLimit);
   if (query->execute()) {
     auto queryResult = query->result();
     edm::LogInfo(m_name) << "Found " << queryResult.size() << " lumisections with STABLE BEAM during the fill "

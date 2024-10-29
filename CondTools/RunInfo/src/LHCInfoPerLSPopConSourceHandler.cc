@@ -517,7 +517,7 @@ size_t LHCInfoPerLSPopConSourceHandler::getLumiData(const cond::OMSService& oms,
   query->addOutputVars({"start_time", "run_number", "beams_stable", "lumisection_number"});
   query->filterEQ("fill_number", fillId);
   query->filterGT("start_time", beginFillTime).filterLT("start_time", endFillTime);
-  query->limit(kLumisectionsQueryLimit);
+  query->limit(cond::lhcInfoHelper::kLumisectionsQueryLimit);
   size_t nlumi = 0;
   if (query->execute()) {
     auto queryResult = query->result();

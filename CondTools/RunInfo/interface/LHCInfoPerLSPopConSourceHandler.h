@@ -18,8 +18,6 @@ public:
   void getNewObjects() override;
   std::string id() const override;
 
-  static constexpr unsigned int kLumisectionsQueryLimit = 4000;
-
 private:
   void populateIovs();
   void filterInvalidPayloads();
