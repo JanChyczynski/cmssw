@@ -57,6 +57,20 @@ options.register( 'endTime'
                      default to empty string which sets no restriction"""
                   )
 
+options.register( 'sourceConnection'
+                , "oracle://cms_orcon_adg/CMS_RUNTIME_LOGGER"
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.string
+                , """beam data source connection string (aka PPS db)
+                     It's the source of crossing angle and beta * data"""
+                  )
+options.register( 'oms'
+                , "http://vocms0184.cern.ch/agg/api/v1"
+                , VarParsing.VarParsing.multiplicity.singleton
+                , VarParsing.VarParsing.varType.string
+                , """OMS base URL"""
+                  )
+
 #duringFill mode specific:
 options.register( 'lastLumiFile'
                 , ''
@@ -214,8 +228,8 @@ process.Test1 = cms.EDAnalyzer(("LHCInfoPerLSPopConAnalyzer" if options.mode == 
                                    endTime = cms.untracked.string(options.endTime),
                                    endFill = cms.untracked.bool(options.mode == "endFill"),
                                    name = cms.untracked.string("LHCInfoPerLSPopConSourceHandler"),
-                                   connectionString = cms.untracked.string("oracle://cms_orcon_adg/CMS_RUNTIME_LOGGER"),
-                                   omsBaseUrl = cms.untracked.string("http://vocms0184.cern.ch/agg/api/v1"),
+                                   connectionString = cms.untracked.string(options.sourceConnection),
+                                   omsBaseUrl = cms.untracked.string(options.oms),
                                    authenticationPath = cms.untracked.string(options.authenticationPath),
                                    debug=cms.untracked.bool(False), # Additional logs
                                    debugLogic=cms.untracked.bool(options.debugLogic),
