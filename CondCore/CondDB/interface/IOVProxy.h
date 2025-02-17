@@ -161,7 +161,7 @@ namespace cond {
       // maybe will be removed with a re-design of the top level interface (ESSources )
       const std::shared_ptr<SessionImpl>& session() const;
 
-      // std::string m_source = "other"; //TODO remvoe debug 
+      std::string m_source = "default constructed"; //TODO remvoe debug 
 
     private:
       void checkTransaction(const std::string& ctx) const;
