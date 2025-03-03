@@ -162,6 +162,7 @@ namespace cond {
       const std::shared_ptr<SessionImpl>& session() const;
 
       std::string m_source = "default constructed"; //TODO remvoe debug 
+      bool m_printDebug = "default constructed"; //TODO remvoe debug 
 
     private:
       void checkTransaction(const std::string& ctx) const;

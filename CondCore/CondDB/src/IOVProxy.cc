@@ -370,10 +370,10 @@ namespace cond {
 //     }
 
 
-    bool printBeamSpotDiagnostics(const IOVProxyData &iovProxyData,
+    bool printIOVSequenceDiagnostics(const IOVProxyData &iovProxyData,
                                   cond::Time_t lowerGroup,
                                   cond::Time_t higherGroup) {
-      if (iovProxyData.tagInfo.payloadType != "BeamSpotOnlineObjects") {
+      if (iovProxyData.tagInfo.payloadType != "BeamSpotOnlineObjects") { //TODO remove
         return false;
       }
 
@@ -430,15 +430,21 @@ namespace cond {
       // edm::LogSystem("NewIOV") << s.str() << std::endl;
       // std::exit(0);  //TODO DEBUG To avoid long exection of unrelated code after diagnostics got printed
 
-      if (printBeamSpotDiagnostics(*m_data, lowerGroup, higherGroup)) {
-        //TODO make sure this is only in debug mode
-        std::exit(0);  //To avoid long exection of unrelated code after diagnostics got printed
+      //TODO
+      if(true) {
+        edm::LogSystem("NewIOV") << "In IOVProxy before diagnostics: \n" //TODO remove
+                                  << "payloadType: " << iovProxyData.tagInfo.payloadType << "\n" 
+                                  << "IOVProxy m_printDebug: " << m_printDebug << std::endl;
+        if (printIOVSequenceDiagnostics(*m_data, lowerGroup, higherGroup)) {
+          //TODO make sure this is only in debug mode
+          std::exit(0);  //To avoid long exection of unrelated code after diagnostics got printed
+        }
       }
 
 // TODO
 // #ifdef BEAM_SPOT_DIAGNOSTICS_DEBUG
 // #else
-//       printBeamSpotDiagnostics(m_data, lowerGroup, higherGroup);
+//       printIOVSequenceDiagnostics(m_data, lowerGroup, higherGroup);
 // #endif
 
     }
