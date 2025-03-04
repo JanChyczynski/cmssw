@@ -433,7 +433,7 @@ namespace cond {
       //TODO
       if(true) {
         edm::LogSystem("NewIOV") << "In IOVProxy before diagnostics: \n" //TODO remove
-                                  << "payloadType: " << iovProxyData.tagInfo.payloadType << "\n" 
+                                  << "payloadType: " << m_data->tagInfo.payloadType << "\n" 
                                   << "IOVProxy m_printDebug: " << m_printDebug << std::endl;
         if (printIOVSequenceDiagnostics(*m_data, lowerGroup, higherGroup)) {
           //TODO make sure this is only in debug mode
