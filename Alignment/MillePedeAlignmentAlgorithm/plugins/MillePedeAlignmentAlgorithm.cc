@@ -490,7 +490,7 @@ void MillePedeAlignmentAlgorithm::run(const edm::EventSetup &setup, const EventI
   const auto tracksPerTraj = theTrajectoryFactory->tracksPerTrajectory();
   for (auto iRefTraj = trajectories.cbegin(), iRefTrajE = trajectories.cend(); iRefTraj != iRefTrajE;
        ++iRefTraj, ++refTrajCount) {
-    RefTrajColl::value_type refTrajPtr = *iRefTraj;
+    const RefTrajColl::value_type &refTrajPtr = *iRefTraj;
     if (theMonitor)
       theMonitor->fillRefTrajectory(refTrajPtr);
 
@@ -722,8 +722,12 @@ void MillePedeAlignmentAlgorithm::endRun(const EndRunInfo &runInfo, const edm::E
 void MillePedeAlignmentAlgorithm::beginLuminosityBlock(const edm::EventSetup &) {
   if (!runAtPCL_)
     return;
-  if (this->isMode(myMilleBit))
+  if (this->isMode(myMilleBit)) {
     theMille->resetOutputFile();
+    theBinary.reset();  // GBL output has to be considered since same binary file is used
+    theBinary = std::make_unique<MilleBinary>((theDir + theConfig.getParameter<std::string>("binaryFile")).c_str(),
+                                              theGblDoubleBinary);
+  }
 }
 
 //____________________________________________________

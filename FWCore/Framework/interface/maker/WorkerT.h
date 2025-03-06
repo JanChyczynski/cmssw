@@ -57,7 +57,7 @@ namespace edm {
     SerialTaskQueue* globalLuminosityBlocksQueue() final;
 
     void updateLookup(BranchType iBranchType, ProductResolverIndexHelper const&) final;
-    void updateLookup(eventsetup::ESRecordsToProxyIndices const&) final;
+    void updateLookup(eventsetup::ESRecordsToProductResolverIndices const&) final;
     void selectInputProcessBlocks(ProductRegistry const&, ProcessBlockHelperBase const&) final;
 
     void resolvePutIndicies(
@@ -91,6 +91,14 @@ namespace edm {
     bool implNeedToRunSelection() const final;
 
     void implDoAcquire(EventTransitionInfo const&, ModuleCallingContext const*, WaitingTaskWithArenaHolder&) final;
+
+    size_t transformIndex(edm::BranchDescription const&) const final;
+    void implDoTransformAsync(WaitingTaskHolder,
+                              size_t iTransformIndex,
+                              EventPrincipal const&,
+                              ParentContext const&,
+                              ServiceWeakToken const&) final;
+    ProductResolverIndex itemToGetForTransform(size_t iTransformIndex) const final;
 
     bool implDoPrePrefetchSelection(StreamID, EventPrincipal const&, ModuleCallingContext const*) override;
     bool implDoBeginProcessBlock(ProcessBlockPrincipal const&, ModuleCallingContext const*) override;
@@ -142,14 +150,12 @@ namespace edm {
       return module_->itemsToGetFrom(iType);
     }
 
-    std::vector<ESProxyIndex> const& esItemsToGetFrom(Transition iTransition) const override {
+    std::vector<ESResolverIndex> const& esItemsToGetFrom(Transition iTransition) const override {
       return module_->esGetTokenIndicesVector(iTransition);
     }
     std::vector<ESRecordIndex> const& esRecordsToGetFrom(Transition iTransition) const override {
       return module_->esGetTokenRecordIndicesVector(iTransition);
     }
-
-    std::vector<ProductResolverIndex> const& itemsShouldPutInEvent() const override;
 
     void preActionBeforeRunEventAsync(WaitingTaskHolder iTask,
                                       ModuleCallingContext const& iModuleCallingContext,

@@ -17,6 +17,7 @@
 
 struct mpPCLresults {
 private:
+  bool m_isHG;
   bool m_isDBUpdated;
   bool m_isDBUpdateVetoed;
   int m_nRecords;
@@ -30,14 +31,17 @@ public:
                int nRecords,
                int exitCode,
                std::string exitMessage,
-               std::bitset<4> updateBits)
-      : m_isDBUpdated(isDBUpdated),
+               std::bitset<4> updateBits,
+               bool isHG)
+      : m_isHG(isHG),
+        m_isDBUpdated(isDBUpdated),
         m_isDBUpdateVetoed(isDBUpdateVetoed),
         m_nRecords(nRecords),
         m_exitCode(exitCode),
         m_exitMessage(exitMessage),
         m_updateBits(updateBits) {}
 
+  const bool isHighGranularity() { return m_isHG; }
   const bool getDBUpdated() { return m_isDBUpdated; }
   const bool getDBVetoed() { return m_isDBUpdateVetoed; }
   const bool exceedsThresholds() { return m_updateBits.test(0); }
@@ -105,8 +109,10 @@ public:  //====================================================================
   const int binariesAmount() const { return binariesAmount_; }
 
   const mpPCLresults getResults() const {
-    return mpPCLresults(updateDB_, vetoUpdateDB_, Nrec_, exitCode_, exitMessage_, updateBits_);
+    return mpPCLresults(updateDB_, vetoUpdateDB_, Nrec_, exitCode_, exitMessage_, updateBits_, isHG_);
   }
+
+  const std::map<std::string, std::array<bool, 6>>& getResultsHG() const { return fractionExceeded_; }
 
 private:
   //========================= PRIVATE ENUMS ====================================
@@ -184,6 +190,9 @@ private:
 
   // pede binaries available
   int binariesAmount_{0};
+
+  // Fraction threshold booleans for HG alignment
+  std::map<std::string, std::array<bool, 6>> fractionExceeded_;
 
   int Nrec_{0};
   int exitCode_{-1};

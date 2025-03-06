@@ -2,11 +2,12 @@
 # Way to use this:
 #   cmsRun runDD4hep2026_cfg.py geometry=D92
 #
-#   Options for geometry D77, D83, D88, D92, D93
+#   Options for geometry D86, D88, D91, D92, D93, D94, D95, D96, D97, D98, D99,
+#                        D100, D101, D102, D103, D104, D105, D106
 #
 ###############################################################################
 import FWCore.ParameterSet.Config as cms
-import os, sys, imp, re
+import os, sys, importlib, re
 import FWCore.ParameterSet.VarParsing as VarParsing
 
 ####################################################################
@@ -16,7 +17,7 @@ options.register('geometry',
                  "D92",
                   VarParsing.VarParsing.multiplicity.singleton,
                   VarParsing.VarParsing.varType.string,
-                  "geometry of operations: D77, D83, D88, D92, D93")
+                  "geometry of operations: D86, D88, D91, D92, D93, D94, D95, D96, D97, D98, D99, D100, D101, D102, D103, D104, D105, D106")
 
 ### get and parse the command line arguments
 options.parseArguments()
@@ -27,58 +28,30 @@ print(options)
 # Use the options
 
 from Configuration.ProcessModifiers.dd4hep_cff import dd4hep
-if (options.geometry == "D83"):
-    from Configuration.Eras.Era_Phase2C11M9_cff import Phase2C11M9
-    process = cms.Process('G4PrintGeometry',Phase2C11M9,dd4hep)
-    process.load('Configuration.Geometry.GeometryDD4hepExtended2026D83Reco_cff')
-    materialFileName = 'matfileD83DD4hep.txt'
-    solidFileName    = 'solidfileD83DD4hep.txt'
-    lvFileName       = 'lvfileD83DD4hep.txt'
-    pvFileName       = 'pvfileD83DD4hep.txt'
-    touchFileName    = 'touchfileD83DD4hep.txt'
-elif (options.geometry == "D77"):
-    from Configuration.Eras.Era_Phase2C11_cff import Phase2C11
-    process = cms.Process('G4PrintGeometry',Phase2C11,dd4hep)
-    process.load('Configuration.Geometry.GeometryDD4hepExtended2026D77Reco_cff')
-    materialFileName = 'matfileD77DD4hep.txt'
-    solidFileName    = 'solidfileD77DD4hep.txt'
-    lvFileName       = 'lvfileD77DD4hep.txt'
-    pvFileName       = 'pvfileD77DD4hep.txt'
-    touchFileName    = 'touchfileD77DD4hep.txt'
-elif (options.geometry == "D92"):
-    from Configuration.Eras.Era_Phase2C11M9_cff import Phase2C11M9
-    process = cms.Process('G4PrintGeometry',Phase2C11M9,dd4hep)
-    process.load('Configuration.Geometry.GeometryDD4hepExtended2026D92Reco_cff')
-    materialFileName = 'matfileD92DD4hep.txt'
-    solidFileName    = 'solidfileD92DD4hep.txt'
-    lvFileName       = 'lvfileD92DD4hep.txt'
-    pvFileName       = 'pvfileD92DD4hep.txt'
-    touchFileName    = 'touchfileD92DD4hep.txt'
-elif (options.geometry == "D93"):
-    from Configuration.Eras.Era_Phase2C11M9_cff import Phase2C11M9
-    process = cms.Process('G4PrintGeometry',Phase2C11M9,dd4hep)
-    process.load('Configuration.Geometry.GeometryDD4hepExtended2026D86Reco_cff')
-    materialFileName = 'matfileD93DD4hep.txt'
-    solidFileName    = 'solidfileD93DD4hep.txt'
-    lvFileName       = 'lvfileD93DD4hep.txt'
-    pvFileName       = 'pvfileD93DD4hep.txt'
-    touchFileName    = 'touchfileD93DD4hep.txt'
+if (options.geometry == "D94"):
+    from Configuration.Eras.Era_Phase2C20I13M9_cff import Phase2C20I13M9
+    process = cms.Process('G4PrintGeometry',Phase2C20I13M9,dd4hep)
 else:
-    from Configuration.Eras.Era_Phase2C11M9_cff import Phase2C11M9
-    process = cms.Process('G4PrintGeometry',Phase2C11M9,dd4hep)
-    process.load('Configuration.Geometry.GeometryDD4hepExtended2026D88Reco_cff')
-    materialFileName = 'matfileD88DD4hep.txt'
-    solidFileName    = 'solidfileD88DD4hep.txt'
-    lvFileName       = 'lvfileD88DD4hep.txt'
-    pvFileName       = 'pvfileD88DD4hep.txt'
-    touchFileName    = 'touchfileD88DD4hep.txt'
+    from Configuration.Eras.Era_Phase2C17I13M9_cff import Phase2C17I13M9
+    process = cms.Process('G4PrintGeometry',Phase2C17I13M9,dd4hep)
 
+geomFile = "Configuration.Geometry.GeometryDD4hepExtended2026" + options.geometry + "Reco_cff"
+materialFileName = "matfile" + options.geometry + "DD4hep.txt"
+solidFileName    = "solidfile" + options.geometry + "DD4hep.txt"
+lvFileName       = "lvfile" + options.geometry + "DD4hep.txt"
+pvFileName       = "pvfile" + options.geometry + "DD4hep.txt"
+touchFileName    = "touchfile" + options.geometry + "DD4hep.txt"
+regionFileName   = "regionfile" + options.geometry + "DD4hep.txt"
+
+print("Geometry file Name: ", geomFile)
 print("Material file Name: ", materialFileName)
-print("Solid file Name: ", solidFileName)
-print("LV file Name: ", lvFileName)
-print("PV file Name: ", pvFileName)
-print("Touch file Name: ", touchFileName)
+print("Solid file Name:    ", solidFileName)
+print("LV file Name:       ", lvFileName)
+print("PV file Name:       ", pvFileName)
+print("Touch file Name:    ", touchFileName)
+print("Region file Name:   ", regionFileName)
 
+process.load(geomFile)
 process.load('FWCore.MessageService.MessageLogger_cfi')
 
 from SimG4Core.PrintGeomInfo.g4PrintGeomInfo_cfi import *
@@ -102,6 +75,7 @@ process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
     DumpReplica      = cms.untracked.bool(False),
     DumpTouch        = cms.untracked.bool(False),
     DumpSense        = cms.untracked.bool(False),
+    DumpRegion       = cms.untracked.bool(False),
     DD4hep           = cms.untracked.bool(False),
     Name             = cms.untracked.string(''),
     Names            = cms.untracked.vstring(''),
@@ -110,6 +84,7 @@ process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
     LVFileName       = cms.untracked.string(lvFileName),
     PVFileName       = cms.untracked.string(pvFileName),
     TouchFileName    = cms.untracked.string(touchFileName),
+    RegionFileName   = cms.untracked.string(regionFileName),
     FileDetail       = cms.untracked.bool(True),
     type             = cms.string('PrintGeomInfoAction')
 ))

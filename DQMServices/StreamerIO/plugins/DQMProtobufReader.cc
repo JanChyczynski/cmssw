@@ -1,40 +1,44 @@
 #include "DQMProtobufReader.h"
 
-#include "FWCore/MessageLogger/interface/JobReport.h"
-#include "DQMServices/Core/interface/DQMStore.h"
-#include "DataFormats/Histograms/interface/DQMToken.h"
-
-#include "FWCore/Utilities/interface/UnixSignalHandlers.h"
-// #include "FWCore/Sources/interface/ProducerSourceBase.h"
-
 #include "DQMServices/Core/interface/ROOTFilePB.pb.h"
+#include "DataFormats/Histograms/interface/DQMToken.h"
+#include "FWCore/Framework/interface/RunPrincipal.h"
+#include "FWCore/Framework/interface/LuminosityBlockPrincipal.h"
+#include "FWCore/Framework/interface/LuminosityBlock.h"
+#include "FWCore/MessageLogger/interface/JobReport.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "FWCore/Sources/interface/ProducerSourceBase.h"
+#include "FWCore/Utilities/interface/UnixSignalHandlers.h"
+
+#include <cstdlib>
+#include <fcntl.h>
+#include <filesystem>
+#include <regex>
+
+#include <TBufferFile.h>
+
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/gzip_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-#include "TBufferFile.h"
-
-#include <regex>
-#include <cstdlib>
-
 using namespace dqmservices;
 
 DQMProtobufReader::DQMProtobufReader(edm::ParameterSet const& pset, edm::InputSourceDescription const& desc)
-    : PuttableSourceBase(pset, desc), fiterator_(pset) {
-  flagSkipFirstLumis_ = pset.getUntrackedParameter<bool>("skipFirstLumis");
-  flagEndOfRunKills_ = pset.getUntrackedParameter<bool>("endOfRunKills");
-  flagDeleteDatFiles_ = pset.getUntrackedParameter<bool>("deleteDatFiles");
-  flagLoadFiles_ = pset.getUntrackedParameter<bool>("loadFiles");
-
+    : PuttableSourceBase(pset, desc),
+      fiterator_(pset),
+      flagSkipFirstLumis_(pset.getUntrackedParameter<bool>("skipFirstLumis")),
+      flagEndOfRunKills_(pset.getUntrackedParameter<bool>("endOfRunKills")),
+      flagDeleteDatFiles_(pset.getUntrackedParameter<bool>("deleteDatFiles")),
+      flagLoadFiles_(pset.getUntrackedParameter<bool>("loadFiles")) {
   produces<std::string, edm::Transition::BeginLuminosityBlock>("sourceDataPath");
   produces<std::string, edm::Transition::BeginLuminosityBlock>("sourceJsonPath");
   produces<DQMToken, edm::Transition::BeginRun>("DQMGenerationRecoRun");
   produces<DQMToken, edm::Transition::BeginLuminosityBlock>("DQMGenerationRecoLumi");
 }
 
-DQMProtobufReader::~DQMProtobufReader() {}
-
-edm::InputSource::ItemType DQMProtobufReader::getNextItemType() {
+edm::InputSource::ItemTypeInfo DQMProtobufReader::getNextItemType() {
   typedef DQMFileIterator::State State;
   typedef DQMFileIterator::LumiEntry LumiEntry;
 
@@ -45,23 +49,23 @@ edm::InputSource::ItemType DQMProtobufReader::getNextItemType() {
 
     if (edm::shutdown_flag.load()) {
       fiterator_.logFileAction("Shutdown flag was set, shutting down.");
-      return InputSource::IsStop;
+      return InputSource::ItemType::IsStop;
     }
 
     // check for end of run file and force quit
     if (flagEndOfRunKills_ && (fiterator_.state() != State::OPEN)) {
-      return InputSource::IsStop;
+      return InputSource::ItemType::IsStop;
     }
 
     // check for end of run and quit if everything has been processed.
     // this is the clean exit
     if ((!fiterator_.lumiReady()) && (fiterator_.state() == State::EOR)) {
-      return InputSource::IsStop;
+      return InputSource::ItemType::IsStop;
     }
 
     // skip to the next file if we have no files openned yet
     if (fiterator_.lumiReady()) {
-      return InputSource::IsLumi;
+      return InputSource::ItemType::IsLumi;
     }
 
     fiterator_.delay();
@@ -69,7 +73,7 @@ edm::InputSource::ItemType DQMProtobufReader::getNextItemType() {
     // IsSynchronize state
     //
     // comment out in order to block at this level
-    // return InputSource::IsSynchronize;
+    // return InputSource::ItemType::IsSynchronize;
   }
 
   // this is unreachable
@@ -282,31 +286,26 @@ void DQMProtobufReader::readEvent_(edm::EventPrincipal&){};
 void DQMProtobufReader::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
 
-  desc.setComment(
-      "Creates runs and lumis and fills the dqmstore from protocol buffer "
-      "files.");
+  desc.setComment("Creates runs and lumis and fills the dqmstore from protocol buffer files.");
   edm::ProducerSourceBase::fillDescription(desc);
 
   desc.addUntracked<bool>("skipFirstLumis", false)
       ->setComment(
-          "Skip (and ignore the minEventsPerLumi parameter) for the files "
-          "which have been available at the begining of the processing. "
-          "If set to true, the reader will open last available file for "
-          "processing.");
+          "Skip (and ignore the minEventsPerLumi parameter) for the files which have been available at the begining of "
+          "the processing. If set to true, the reader will open last available file for processing.");
 
   desc.addUntracked<bool>("deleteDatFiles", false)
-      ->setComment(
-          "Delete data files after they have been closed, in order to "
-          "save disk space.");
+      ->setComment("Delete data files after they have been closed, in order to save disk space.");
 
   desc.addUntracked<bool>("endOfRunKills", false)
       ->setComment(
-          "Kill the processing as soon as the end-of-run file appears, even if "
-          "there are/will be unprocessed lumisections.");
+          "Kill the processing as soon as the end-of-run file appears, even if there are/will be unprocessed "
+          "lumisections.");
 
   desc.addUntracked<bool>("loadFiles", true)
       ->setComment(
-          "Tells the source load the data files. If set to false, source will create skeleton lumi transitions.");
+          "Tells the source to load the data files. If set to False, the source will create skeleton lumi "
+          "transitions.");
 
   DQMFileIterator::fillDescription(desc);
   descriptions.add("source", desc);

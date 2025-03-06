@@ -35,9 +35,30 @@ hltpostvalidation = cms.Sequence(
     +hltExoticaPostProcessors
     +b2gHLTriggerValidationHarvest
     +HLTSMPPostVal
-    #+HltBTagPostVal
+    +HltBTagPostVal
     )
 from Configuration.Eras.Modifier_phase1Pixel_cff import phase1Pixel
+
+# Temporary Phase-2 configuration
+# Exclude everything except JetMET for now
+from Configuration.Eras.Modifier_phase2_common_cff import phase2_common
+phase2_common.toReplaceWith(hltpostvalidation, hltpostvalidation.copyAndExclude([HLTMuonPostVal,
+                                                                                 HLTTauPostVal,
+                                                                                 EgammaPostVal,
+                                                                                 postProcessorHLTgsfTrackingSequence,
+                                                                                 postProcessorHLTmuonTrackingSequence,
+                                                                                 heavyFlavorValidationHarvestingSequence,
+                                                                                 #JetMETPostVal,
+                                                                                 #HLTAlCaPostVal,
+                                                                                 SusyExoPostVal,
+                                                                                 #ExamplePostVal,
+                                                                                 hltvalidationqt,
+                                                                                 HLTHiggsPostVal,
+                                                                                 hltExoticaPostProcessors,
+                                                                                 b2gHLTriggerValidationHarvest,
+                                                                                 HLTSMPPostVal,
+                                                                                 HltBTagPostVal])
+)
 
 # fastsim customs
 from Configuration.Eras.Modifier_fastSim_cff import fastSim

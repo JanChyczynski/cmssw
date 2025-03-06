@@ -10,12 +10,12 @@ BTagAndProbeMonitoring = BTagAndProbeMonitoring.clone(
                         dz  = 9999.),
     
     electrons = "gedGsfElectrons", # while pfIsolatedElectronsEI are reco::PFCandidate !
-    elecID    = "egmGsfElectronIDsForDQM:cutBasedElectronID-Fall17-94X-V1-tight", #Electron ID
+    elecID    = "egmGsfElectronIDsForDQM:cutBasedElectronID-RunIIIWinter22-V1-tight", #Electron ID
     muons     = "muons", # while pfIsolatedMuonsEI are reco::PFCandidate !
     vertices  = "offlinePrimaryVertices",
     
-    btagAlgos = ['pfDeepCSVJetTags:probb', 'pfDeepCSVJetTags:probbb'],
-    workingpoint = 0.8484, # Medium wp
+    btagAlgos = ['pfParticleNetAK4DiscriminatorsJetTagsForRECO:BvsAll'],
+    workingpoint = 0.2, # Medium wp
     leptJetDeltaRmin = 0.4,
     bJetDeltaEtaMax  = 9999.,
     

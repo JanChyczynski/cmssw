@@ -20,12 +20,10 @@
 
 //#define DEBUG
 #include "Debug.h"
+//#define DEBUG_FINAL_FIT
 
 #include "oneapi/tbb/parallel_for.h"
 #include "oneapi/tbb/parallel_for_each.h"
-
-// Set this to select a single track for deep debugging:
-//#define SELECT_SEED_LABEL -494
 
 namespace mkfit {
 
@@ -45,6 +43,12 @@ namespace mkfit {
       m_cloners.populate(n_thr - m_cloners.size());
       m_fitters.populate(n_thr - m_fitters.size());
       m_finders.populate(n_thr - m_finders.size());
+    }
+
+    void clear() {
+      m_cloners.clear();
+      m_fitters.clear();
+      m_finders.clear();
     }
   };
 
@@ -146,7 +150,7 @@ namespace {
     }
   }
 
-  void print_seeds(const EventOfCombCandidates &event_of_comb_cands) {
+  [[maybe_unused]] void print_seeds(const EventOfCombCandidates &event_of_comb_cands) {
     for (int iseed = 0; iseed < event_of_comb_cands.size(); iseed++) {
       print_seed2(event_of_comb_cands[iseed].front());
     }
@@ -168,6 +172,7 @@ namespace mkfit {
   std::unique_ptr<MkBuilder> MkBuilder::make_builder(bool silent) { return std::make_unique<MkBuilder>(silent); }
 
   void MkBuilder::populate() { g_exe_ctx.populate(Config::numThreadsFinder); }
+  void MkBuilder::clear() { g_exe_ctx.clear(); }
 
   std::pair<int, int> MkBuilder::max_hits_layer(const EventOfHits &eoh) const {
     int maxN = 0;
@@ -244,11 +249,11 @@ namespace mkfit {
       part.m_phi_eta_foo = [&](float phi, float eta) { phi_eta_binnor.register_entry_safe(phi, eta); };
 
       phi_eta_binnor.begin_registration(size);
-      m_job->m_iter_config.m_partition_seeds(m_job->m_trk_info, in_seeds, m_job->m_event_of_hits, part);
+      m_job->m_iter_config.m_seed_partitioner(m_job->m_trk_info, in_seeds, m_job->m_event_of_hits, part);
       phi_eta_binnor.finalize_registration();
       ranks.swap(phi_eta_binnor.m_ranks);
     } else {
-      m_job->m_iter_config.m_partition_seeds(m_job->m_trk_info, in_seeds, m_job->m_event_of_hits, part);
+      m_job->m_iter_config.m_seed_partitioner(m_job->m_trk_info, in_seeds, m_job->m_event_of_hits, part);
     }
 
     for (int i = 0; i < size; ++i) {
@@ -270,7 +275,7 @@ namespace mkfit {
       int j = seeds_sorted ? i : ranks[i];
       int reg = part.m_region[j];
       const Track &seed = in_seeds[j];
-      insert_seed(seed, reg, seed_cursors[reg]++);
+      insert_seed(seed, j, reg, seed_cursors[reg]++);
 
       HitOnTrack hot = seed.getLastHitOnTrack();
       m_seedMinLastLayer[reg] = std::min(m_seedMinLastLayer[reg], hot.layer);
@@ -294,21 +299,36 @@ namespace mkfit {
             m_seedEtaSeparators[2] - m_seedEtaSeparators[1], m_seedMinLastLayer[2], m_seedMaxLastLayer[2],
             m_seedEtaSeparators[3] - m_seedEtaSeparators[2], m_seedMinLastLayer[3], m_seedMaxLastLayer[3],
             m_seedEtaSeparators[4] - m_seedEtaSeparators[3], m_seedMinLastLayer[4], m_seedMaxLastLayer[4]);
-    dcall(print_seeds(m_event_of_comb_cands));
+    // dcall(print_seeds(m_event_of_comb_cands));
     // clang-format on
   }
 
   //------------------------------------------------------------------------------
 
-  int MkBuilder::filter_comb_cands(std::function<filter_track_cand_foo> filter) {
+  int MkBuilder::filter_comb_cands(filter_candidates_func filter, bool attempt_all_cands) {
     EventOfCombCandidates &eoccs = m_event_of_comb_cands;
     int i = 0, place_pos = 0;
 
-    dprintf("MkBuilder::filter_comb_cands Entering filter size eoccsm_size=%d\n", eoccs.size());
+    dprintf("MkBuilder::filter_comb_cands Entering filter size eoccs.size=%d\n", eoccs.size());
 
     std::vector<int> removed_cnts(m_job->num_regions());
     while (i < eoccs.size()) {
-      if (filter(eoccs[i].front())) {
+      if (eoccs.cands_in_backward_rep())
+        eoccs[i].repackCandPostBkwSearch(0);
+      bool passed = filter(eoccs[i].front(), *m_job);
+
+      if (!passed && attempt_all_cands) {
+        for (int j = 1; j < (int)eoccs[i].size(); ++j) {
+          if (eoccs.cands_in_backward_rep())
+            eoccs[i].repackCandPostBkwSearch(j);
+          if (filter(eoccs[i][j], *m_job)) {
+            eoccs[i][0] = eoccs[i][j];  // overwrite front, no need to std::swap() them
+            passed = true;
+            break;
+          }
+        }
+      }
+      if (passed) {
         if (place_pos != i)
           std::swap(eoccs[place_pos], eoccs[i]);
         ++place_pos;
@@ -335,7 +355,7 @@ namespace mkfit {
 
     eoccs.resizeAfterFiltering(n_removed);
 
-    dprintf("MkBuilder::filter_comb_cands n_removed = %d, eoccsm_size=%d\n", n_removed, eoccs.size());
+    dprintf("MkBuilder::filter_comb_cands n_removed = %d, eoccs.size=%d\n", n_removed, eoccs.size());
 
     return n_removed;
   }
@@ -372,9 +392,6 @@ namespace mkfit {
     const EventOfCombCandidates &eoccs = m_event_of_comb_cands;
     out_vec.reserve(out_vec.size() + eoccs.size());
     for (int i = 0; i < eoccs.size(); i++) {
-      // See MT-RATS comment below.
-      assert(!eoccs[i].empty() && "BackwardFitBH requires output tracks to align with seeds.");
-
       // Take the first candidate, if it exists.
       if (!eoccs[i].empty()) {
         const TrackCand &bcand = eoccs[i].front();
@@ -395,25 +412,6 @@ namespace mkfit {
   //------------------------------------------------------------------------------
 
   void MkBuilder::seed_post_cleaning(TrackVec &tv) {
-#ifdef SELECT_SEED_LABEL
-    {  // Select seed with the defined label for detailed debugging.
-      for (int i = 0; i < (int)tv.size(); ++i) {
-        if (tv[i].label() == SELECT_SEED_LABEL) {
-          printf("Preselect seed with label %d - found on pos %d\n", SELECT_SEED_LABEL, i);
-          if (i != 0)
-            tv[0] = tv[i];
-          tv.resize(1);
-          print("Label", tv[0].label(), tv[0], true);
-          break;
-        }
-      }
-      if (tv.size() != 1) {
-        printf("Preselect seed with label %d - NOT FOUND. Cleaning out seeds.\n", SELECT_SEED_LABEL);
-        tv.clear();
-      }
-    }
-#endif
-
     if (Const::nan_n_silly_check_seeds) {
       int count = 0;
 
@@ -450,7 +448,7 @@ namespace mkfit {
     assert(!in_seeds.empty());
     m_tracks.resize(in_seeds.size());
 
-    import_seeds(in_seeds, seeds_sorted, [&](const Track &seed, int region, int pos) {
+    import_seeds(in_seeds, seeds_sorted, [&](const Track &seed, int seed_idx, int region, int pos) {
       m_tracks[pos] = seed;
       m_tracks[pos].setNSeedHits(seed.nTotalHits());
       m_tracks[pos].setEtaRegion(region);
@@ -478,7 +476,7 @@ namespace mkfit {
 
       const SteeringParams &st_par = m_job->steering_params(region);
       const TrackerInfo &trk_info = m_job->m_trk_info;
-      const PropagationConfig &prop_config = PropagationConfig::get_default();
+      const PropagationConfig &prop_config = trk_info.prop_config();
 
       const RegionOfSeedIndices rosi(m_seedEtaSeparators, region);
 
@@ -524,9 +522,14 @@ namespace mkfit {
             prev_layer = curr_layer;
             curr_layer = layer_plan_it.layer();
             mkfndr->setup(prop_config,
+                          m_job->m_iter_config,
                           m_job->m_iter_config.m_params,
                           m_job->m_iter_config.m_layer_configs[curr_layer],
-                          m_job->get_mask_for_layer(curr_layer));
+                          st_par,
+                          m_job->get_mask_for_layer(curr_layer),
+                          m_event,
+                          region,
+                          m_job->m_in_fwd);
 
             const LayerOfHits &layer_of_hits = m_job->m_event_of_hits[curr_layer];
             const LayerInfo &layer_info = trk_info.layer(curr_layer);
@@ -553,6 +556,7 @@ namespace mkfit {
 
             dcall(pre_prop_print(curr_layer, mkfndr.get()));
 
+            mkfndr->clearFailFlag();
             (mkfndr.get()->*fnd_foos.m_propagate_foo)(
                 layer_info.propagate_to(), curr_tridx, prop_config.finding_inter_layer_pflags);
 
@@ -616,8 +620,8 @@ namespace mkfit {
 
     m_event_of_comb_cands.reset((int)in_seeds.size(), m_job->max_max_cands());
 
-    import_seeds(in_seeds, seeds_sorted, [&](const Track &seed, int region, int pos) {
-      m_event_of_comb_cands.insertSeed(seed, region, pos);
+    import_seeds(in_seeds, seeds_sorted, [&](const Track &seed, int seed_idx, int region, int pos) {
+      m_event_of_comb_cands.insertSeed(seed, seed_idx, m_job->steering_params(region).m_track_scorer, region, pos);
     });
   }
 
@@ -705,10 +709,7 @@ namespace mkfit {
       TrackCand &cand = m_event_of_comb_cands[seed_cand_idx[ti].first][seed_cand_idx[ti].second];
       WSR_Result &w = mkfndr->m_XWsrResult[ti - itrack];
 
-      // XXXX-4 Low pT tracks can miss a barrel layer ... and should be stopped
-      const float cand_r =
-          std::hypot(mkfndr->getPar(ti - itrack, MkBase::iP, 0), mkfndr->getPar(ti - itrack, MkBase::iP, 1));
-
+      // Low pT tracks can miss a barrel layer ... and should be stopped
       dprintf("WSR Check label %d, seed %d, cand %d score %f -> wsr %d, in_gap %d\n",
               cand.label(),
               seed_cand_idx[ti].first,
@@ -717,20 +718,25 @@ namespace mkfit {
               w.m_wsr,
               w.m_in_gap);
 
-      if (layer_info.is_barrel() && cand_r < layer_info.rin()) {
-        // Fake outside so it does not get processed in FindTracks Std/CE... and
-        // create a stopped replica in barrel and original copy if there is
-        // still chance to hit endcaps.
-        dprintf("Barrel cand propagated to r=%f ... layer is %f - %f\n", cand_r, layer_info.rin(), layer_info.rout());
-
-        mkfndr->m_XHitSize[ti - itrack] = 0;
+      if (w.m_wsr == WSR_Failed) {
+        // Fake outside so it does not get processed in FindTracks BH/Std/CE.
+        // [ Should add handling of WSR_Failed there, perhaps. ]
         w.m_wsr = WSR_Outside;
 
-        tmp_cands[seed_cand_idx[ti].first - start_seed].push_back(cand);
-        if (region == TrackerInfo::Reg_Barrel) {
-          dprintf(" creating extra stopped held back candidate\n");
-          tmp_cands[seed_cand_idx[ti].first - start_seed].back().addHitIdx(-2, layer_info.layer_id(), 0);
+        if (layer_info.is_barrel()) {
+          dprintf("Barrel cand propagation failed, got to r=%f ... layer is %f - %f\n",
+                  mkfndr->radius(ti - itrack, MkBase::iP),
+                  layer_info.rin(),
+                  layer_info.rout());
+          // In barrel region, create a stopped replica. In transition region keep the original copy
+          // as there is still a chance to hit endcaps.
+          tmp_cands[seed_cand_idx[ti].first - start_seed].push_back(cand);
+          if (region == TrackerInfo::Reg_Barrel) {
+            dprintf(" creating extra stopped held back candidate\n");
+            tmp_cands[seed_cand_idx[ti].first - start_seed].back().addHitIdx(-2, layer_info.layer_id(), 0);
+          }
         }
+        // Never happens for endcap / propToZ
       } else if (w.m_wsr == WSR_Outside) {
         dprintf(" creating extra held back candidate\n");
         tmp_cands[seed_cand_idx[ti].first - start_seed].push_back(cand);
@@ -758,7 +764,7 @@ namespace mkfit {
       const TrackerInfo &trk_info = m_job->m_trk_info;
       const SteeringParams &st_par = m_job->steering_params(region);
       const IterationParams &params = m_job->params();
-      const PropagationConfig &prop_config = PropagationConfig::get_default();
+      const PropagationConfig &prop_config = trk_info.prop_config();
 
       const RegionOfSeedIndices rosi(m_seedEtaSeparators, region);
 
@@ -807,15 +813,21 @@ namespace mkfit {
           prev_layer = curr_layer;
           curr_layer = layer_plan_it.layer();
           mkfndr->setup(prop_config,
+                        m_job->m_iter_config,
                         iter_params,
                         m_job->m_iter_config.m_layer_configs[curr_layer],
-                        m_job->get_mask_for_layer(curr_layer));
-
-          dprintf("\n* Processing layer %d\n", curr_layer);
+                        st_par,
+                        m_job->get_mask_for_layer(curr_layer),
+                        m_event,
+                        region,
+                        m_job->m_in_fwd);
 
           const LayerOfHits &layer_of_hits = m_job->m_event_of_hits[curr_layer];
           const LayerInfo &layer_info = trk_info.layer(curr_layer);
           const FindingFoos &fnd_foos = FindingFoos::get_finding_foos(layer_info.is_barrel());
+
+          dprintf("\n* Processing layer %d\n", curr_layer);
+          mkfndr->begin_layer(layer_of_hits);
 
           int theEndCand = find_tracks_unroll_candidates(seed_cand_idx,
                                                          start_seed,
@@ -843,6 +855,7 @@ namespace mkfit {
             //propagate to layer
             dcall(pre_prop_print(curr_layer, mkfndr.get()));
 
+            mkfndr->clearFailFlag();
             (mkfndr.get()->*fnd_foos.m_propagate_foo)(
                 layer_info.propagate_to(), end - itrack, prop_config.finding_inter_layer_pflags);
 
@@ -905,13 +918,13 @@ namespace mkfit {
               tmp_cands[is].clear();
             }
           }
-
+          mkfndr->end_layer();
         }  // end of layer loop
         mkfndr->release();
 
         // final sorting
         for (int iseed = start_seed; iseed < end_seed; ++iseed) {
-          eoccs[iseed].mergeCandsAndBestShortOne(m_job->params(), true, true);
+          eoccs[iseed].mergeCandsAndBestShortOne(m_job->params(), st_par.m_track_scorer, true, true);
         }
       });  // end parallel-for over chunk of seeds within region
     });    // end of parallel-for-each over eta regions
@@ -968,23 +981,23 @@ namespace mkfit {
     const TrackerInfo &trk_info = m_job->m_trk_info;
     const SteeringParams &st_par = m_job->steering_params(region);
     const IterationParams &params = m_job->params();
-    const PropagationConfig &prop_config = PropagationConfig::get_default();
+    const PropagationConfig &prop_config = trk_info.prop_config();
 
     const int n_seeds = end_seed - start_seed;
 
-    std::vector<std::pair<int, int>> seed_cand_idx, seed_cand_update_idx;
+    std::vector<std::pair<int, int>> seed_cand_idx;
+    std::vector<UpdateIndices> seed_cand_update_idx, seed_cand_overlap_idx;
     seed_cand_idx.reserve(n_seeds * params.maxCandsPerSeed);
     seed_cand_update_idx.reserve(n_seeds * params.maxCandsPerSeed);
+    seed_cand_overlap_idx.reserve(n_seeds * params.maxCandsPerSeed);
 
     std::vector<std::vector<TrackCand>> extra_cands(n_seeds);
     for (int ii = 0; ii < n_seeds; ++ii)
       extra_cands[ii].reserve(params.maxCandsPerSeed);
 
-    cloner.begin_eta_bin(&eoccs, &seed_cand_update_idx, &extra_cands, start_seed, n_seeds);
+    cloner.begin_eta_bin(&eoccs, &seed_cand_update_idx, &seed_cand_overlap_idx, &extra_cands, start_seed, n_seeds);
 
     // Loop over layers, starting from after the seed.
-    // Note that we do a final pass with curr_layer = -1 to update parameters
-    // and output final tracks.
 
     auto layer_plan_it = st_par.make_iterator(iteration_dir);
 
@@ -1014,17 +1027,23 @@ namespace mkfit {
       prev_layer = curr_layer;
       curr_layer = layer_plan_it.layer();
       mkfndr->setup(prop_config,
+                    m_job->m_iter_config,
                     iter_params,
                     m_job->m_iter_config.m_layer_configs[curr_layer],
-                    m_job->get_mask_for_layer(curr_layer));
+                    st_par,
+                    m_job->get_mask_for_layer(curr_layer),
+                    m_event,
+                    region,
+                    m_job->m_in_fwd);
 
       const bool pickup_only = layer_plan_it.is_pickup_only();
-
-      dprintf("\n\n* Processing layer %d, %s\n\n", curr_layer, pickup_only ? "pickup only" : "full finding");
 
       const LayerInfo &layer_info = trk_info.layer(curr_layer);
       const LayerOfHits &layer_of_hits = m_job->m_event_of_hits[curr_layer];
       const FindingFoos &fnd_foos = FindingFoos::get_finding_foos(layer_info.is_barrel());
+
+      dprintf("\n\n* Processing layer %d, %s\n\n", curr_layer, pickup_only ? "pickup only" : "full finding");
+      mkfndr->begin_layer(layer_of_hits);
 
       const int theEndCand = find_tracks_unroll_candidates(
           seed_cand_idx, start_seed, end_seed, curr_layer, prev_layer, pickup_only, iteration_dir);
@@ -1070,16 +1089,16 @@ namespace mkfit {
 #endif
 
         // propagate to current layer
+        mkfndr->clearFailFlag();
         (mkfndr->*fnd_foos.m_propagate_foo)(
             layer_info.propagate_to(), end - itrack, prop_config.finding_inter_layer_pflags);
 
         dprint("now get hit range");
 
-#ifdef DUMPHITWINDOW
-        mkfndr->m_event = m_event;
-#endif
-
-        mkfndr->selectHitIndices(layer_of_hits, end - itrack);
+        if (iter_params.useHitSelectionV2)
+          mkfndr->selectHitIndicesV2(layer_of_hits, end - itrack);
+        else
+          mkfndr->selectHitIndices(layer_of_hits, end - itrack);
 
         find_tracks_handle_missed_layers(
             mkfndr, layer_info, extra_cands, seed_cand_idx, region, start_seed, itrack, end);
@@ -1089,6 +1108,11 @@ namespace mkfit {
         // this requires change to propagation flags used in MkFinder::updateWithLastHit()
         // from intra-layer to inter-layer.
         // mkfndr->copyOutParErr(eoccs.refCandidates_nc(), end - itrack, true);
+
+        // For prop-to-plane propagate from the last hit, not layer center.
+        if (Config::usePropToPlane) {
+          mkfndr->inputTracksAndHitIdx(eoccs.refCandidates(), seed_cand_idx, itrack, end, false);
+        }
 
         dprint("make new candidates");
         cloner.begin_iteration();
@@ -1102,18 +1126,58 @@ namespace mkfit {
 
       // Update loop of best candidates. CandCloner prepares the list of those
       // that need update (excluding all those with negative last hit index).
+      // This is split into two sections - candidates without overlaps and with overlaps.
+      // On CMS PU-50 the ratio of those is ~ 65 : 35 over all iterations.
+      // Note, overlap recheck is only enabled for some iterations, e.g. pixelLess.
 
       const int theEndUpdater = seed_cand_update_idx.size();
 
       for (int itrack = 0; itrack < theEndUpdater; itrack += NN) {
         const int end = std::min(itrack + NN, theEndUpdater);
 
-        mkfndr->inputTracksAndHitIdx(eoccs.refCandidates(), seed_cand_update_idx, itrack, end, true);
+        mkfndr->inputTracksAndHits(eoccs.refCandidates(), layer_of_hits, seed_cand_update_idx, itrack, end, true);
 
-        mkfndr->updateWithLastHit(layer_of_hits, end - itrack, fnd_foos);
+        mkfndr->updateWithLoadedHit(end - itrack, layer_of_hits, fnd_foos);
 
         // copy_out the updated track params, errors only (hit-idcs and chi2 already set)
         mkfndr->copyOutParErr(eoccs.refCandidates_nc(), end - itrack, false);
+      }
+
+      const int theEndOverlapper = seed_cand_overlap_idx.size();
+
+      for (int itrack = 0; itrack < theEndOverlapper; itrack += NN) {
+        const int end = std::min(itrack + NN, theEndOverlapper);
+
+        mkfndr->inputTracksAndHits(eoccs.refCandidates(), layer_of_hits, seed_cand_overlap_idx, itrack, end, true);
+
+        mkfndr->updateWithLoadedHit(end - itrack, layer_of_hits, fnd_foos);
+
+        mkfndr->copyOutParErr(eoccs.refCandidates_nc(), end - itrack, false);
+
+        mkfndr->inputOverlapHits(layer_of_hits, seed_cand_overlap_idx, itrack, end);
+
+        // XXXX Could also be calcChi2AndUpdate(), then copy-out would have to be done
+        // below, choosing appropriate slot (with or without the overlap hit).
+        // Probably in a dedicated MkFinder copyOutXyzz function.
+        mkfndr->chi2OfLoadedHit(end - itrack, fnd_foos);
+
+        for (int ii = itrack; ii < end; ++ii) {
+          const int fi = ii - itrack;
+          TrackCand &tc = eoccs[seed_cand_overlap_idx[ii].seed_idx][seed_cand_overlap_idx[ii].cand_idx];
+
+          // XXXX For now we DO NOT use chi2 as this was how things were done before the post-update
+          // chi2 check. To use it we should retune scoring function (might be even simpler).
+          auto chi2Ovlp = mkfndr->m_Chi2[fi];
+          if (mkfndr->m_FailFlag[fi] == 0 && chi2Ovlp >= 0.0f && chi2Ovlp <= 60.0f) {
+            auto scoreCand =
+                getScoreCand(st_par.m_track_scorer, tc, true /*penalizeTailMissHits*/, true /*inFindCandidates*/);
+            tc.addHitIdx(seed_cand_overlap_idx[ii].ovlp_idx, curr_layer, chi2Ovlp);
+            tc.incOverlapCount();
+            auto scoreCandOvlp = getScoreCand(st_par.m_track_scorer, tc, true, true);
+            if (scoreCand > scoreCandOvlp)
+              tc.popOverlap();
+          }
+        }
       }
 
       // Check if cands are sorted, as expected.
@@ -1135,14 +1199,14 @@ namespace mkfit {
         }
       }
 #endif
-
+      mkfndr->end_layer();
     }  // end of layer loop
 
     cloner.end_eta_bin();
 
     // final sorting
     for (int iseed = start_seed; iseed < end_seed; ++iseed) {
-      eoccs[iseed].mergeCandsAndBestShortOne(m_job->params(), true, true);
+      eoccs[iseed].mergeCandsAndBestShortOne(m_job->params(), st_par.m_track_scorer, true, true);
     }
   }
 
@@ -1150,10 +1214,18 @@ namespace mkfit {
   // BackwardFit
   //==============================================================================
 
-  // MT-RATS - eta separators can be screwed after copy out with possibly empty CombCands.
-  // I added asserts to two applicable places above (both here in MkBuilder.cc).
-  // One could also re-calculate / adjust m_seedEtaSeparators, during export iself, probably.
-  // Or use separate seed / track vectors for every region -- which would be prettier.
+#ifdef DEBUG_FINAL_FIT
+  namespace {
+    // clang-format off
+    void dprint_tcand(const TrackCand &t, int i) {
+      dprintf("  %4d with q=%+d chi2=%7.3f pT=%7.3f eta=% 7.3f x=%.3f y=%.3f z=%.3f"
+              " nHits=%2d  label=%4d findable=%d\n",
+              i, t.charge(), t.chi2(), t.pT(), t.momEta(), t.x(), t.y(), t.z(),
+              t.nFoundHits(), t.label(), t.isFindable());
+      }
+    // clang-format on
+  }  // namespace
+#endif
 
   void MkBuilder::backwardFitBH() {
     tbb::parallel_for_each(m_job->regions_begin(), m_job->regions_end(), [&](int region) {
@@ -1176,31 +1248,20 @@ namespace mkfit {
 
   void MkBuilder::fit_cands_BH(MkFinder *mkfndr, int start_cand, int end_cand, int region) {
     const SteeringParams &st_par = m_job->steering_params(region);
-    const PropagationConfig &prop_config = PropagationConfig::get_default();
-#ifdef DEBUG
+    const PropagationConfig &prop_config = m_job->m_trk_info.prop_config();
+    mkfndr->setup_bkfit(prop_config, st_par, m_event);
+#ifdef DEBUG_FINAL_FIT
     EventOfCombCandidates &eoccs = m_event_of_comb_cands;
+    bool debug = true;
 #endif
 
     for (int icand = start_cand; icand < end_cand; icand += NN) {
       const int end = std::min(icand + NN, end_cand);
 
-#ifdef DEBUG
-      printf("Pre Final fit for %d - %d\n", icand, end);
+#ifdef DEBUG_FINAL_FIT
+      dprintf("Pre Final fit for %d - %d\n", icand, end);
       for (int i = icand; i < end; ++i) {
-        const TrackCand &t = eoccs[i][0];
-        printf(
-            "  %4d with q=%+d chi2=%7.3f pT=%7.3f eta=% 7.3f x=%.3f y=%.3f z=%.3f nHits=%2d  label=%4d findable=%d\n",
-            i,
-            t.charge(),
-            t.chi2(),
-            t.pT(),
-            t.momEta(),
-            t.x(),
-            t.y(),
-            t.z(),
-            t.nFoundHits(),
-            t.label(),
-            t.isFindable());
+        dprint_tcand(eoccs[i][0], i);
       }
 #endif
 
@@ -1234,32 +1295,16 @@ namespace mkfit {
                icand,
                1.0f / mkfndr->m_Par[MkBase::iP].At(0, 3, 0),
                mkfndr->m_Chi2(0, 0, 0) / (eoccs[icand][0].nFoundHits() * 3 - 6));
-        printf(
-            "CHIHDR %3s %10s %10s %10s %10s %10s %11s %11s %11s %10s %10s %10s %10s %11s %11s %11s %10s %10s %10s %10s "
-            "%10s %11s %11s\n",
-            "lyr",
-            "chi2",
-            "x_h",
-            "y_h",
-            "z_h",
-            "r_h",
-            "sx_h",
-            "sy_h",
-            "sz_h",
-            "x_t",
-            "y_t",
-            "z_t",
-            "r_t",
-            "sx_t",
-            "sy_t",
-            "sz_t",
-            "pt",
-            "phi",
-            "theta",
-            "phi_h",
-            "phi_t",
-            "d_xy",
-            "d_z");
+        // clang-format off
+        printf("CHIHDR %3s %10s"
+              " %10s %10s %10s %10s %11s %11s %11s"
+              " %10s %10s %10s %10s %11s %11s %11s"
+              " %10s %10s %10s %10s %10s %11s %11s\n",
+              "lyr", "chi2",
+              "x_h", "y_h", "z_h", "r_h", "sx_h", "sy_h", "sz_h",
+              "x_t", "y_t", "z_t", "r_t", "sx_t", "sy_t", "sz_t",
+              "pt", "phi", "theta", "phi_h", "phi_t", "d_xy", "d_z");
+        // clang-format on
         goto redo_fit;
       }
 #endif
@@ -1267,23 +1312,10 @@ namespace mkfit {
       // copy out full set of info at last propagated position
       mkfndr->bkFitOutputTracks(m_tracks, icand, end, prop_config.backward_fit_to_pca);
 
-#ifdef DEBUG
-      printf("Post Final fit for %d - %d\n", icand, end);
+#ifdef DEBUG_FINAL_FIT
+      dprintf("Post Final fit for %d - %d\n", icand, end);
       for (int i = icand; i < end; ++i) {
-        const TrackCand &t = eoccs[i][0];
-        printf(
-            "  %4d with q=%+d chi2=%7.3f pT=%7.3f eta=% 7.3f x=%.3f y=%.3f z=%.3f nHits=%2d  label=%4d findable=%d\n",
-            i,
-            t.charge(),
-            t.chi2(),
-            t.pT(),
-            t.momEta(),
-            t.x(),
-            t.y(),
-            t.z(),
-            t.nFoundHits(),
-            t.label(),
-            t.isFindable());
+        dprint_tcand(eoccs[i][0], i);
       }
 #endif
     }
@@ -1313,46 +1345,31 @@ namespace mkfit {
   void MkBuilder::fit_cands(MkFinder *mkfndr, int start_cand, int end_cand, int region) {
     EventOfCombCandidates &eoccs = m_event_of_comb_cands;
     const SteeringParams &st_par = m_job->steering_params(region);
-    const PropagationConfig &prop_config = PropagationConfig::get_default();
-    mkfndr->setup_bkfit(prop_config);
+    const PropagationConfig &prop_config = m_job->m_trk_info.prop_config();
+    mkfndr->setup_bkfit(prop_config, st_par, m_event);
 
     int step = NN;
     for (int icand = start_cand; icand < end_cand; icand += step) {
       int end = std::min(icand + NN, end_cand);
 
-#ifdef DEBUG
-      printf("Pre Final fit for %d - %d\n", icand, end);
-      for (int i = icand; i < end; ++i) {
-        const TrackCand &t = eoccs[i][0];
-        printf(
-            "  %4d with q=%+d chi2=%7.3f pT=%7.3f eta=% 7.3f x=%.3f y=%.3f z=%.3f nHits=%2d  label=%4d findable=%d\n",
-            i,
-            t.charge(),
-            t.chi2(),
-            t.pT(),
-            t.momEta(),
-            t.x(),
-            t.y(),
-            t.z(),
-            t.nFoundHits(),
-            t.label(),
-            t.isFindable());
-      }
-#endif
-
       bool chi_debug = false;
-#ifdef DEBUG_BACKWARD_FIT
+
+#ifdef DEBUG_FINAL_FIT
+      bool debug = true;
+      dprintf("Pre Final fit for %d - %d\n", icand, end);
+      for (int i = icand; i < end; ++i) {
+        dprint_tcand(eoccs[i][0], i);
+      }
       chi_debug = true;
       static bool first = true;
       if (first) {
         // ./mkFit ... | perl -ne 'if (/^BKF_OVERLAP/) { s/^BKF_OVERLAP //og; print; }' > bkf_ovlp.rtt
-        printf(
+        dprintf(
             "BKF_OVERLAP event/I:label/I:prod_type/I:is_findable/I:layer/I:is_stereo/I:is_barrel/I:"
-            "pt/F:eta/F:phi/F:chi2/F:isnan/I:isfin/I:gtzero/I:hit_label/I:"
+            "pt/F:pt_cur/F:eta/F:phi/F:phi_cur/F:r_cur/F:z_cur/F:chi2/F:isnan/I:isfin/I:gtzero/I:hit_label/I:"
             "sx_t/F:sy_t/F:sz_t/F:d_xy/F:d_z/F\n");
         first = false;
       }
-      mkfndr->m_event = m_event;
 #endif
 
       // input tracks
@@ -1368,23 +1385,10 @@ namespace mkfit {
 
       mkfndr->bkFitOutputTracks(eoccs, icand, end, prop_config.backward_fit_to_pca);
 
-#ifdef DEBUG
-      printf("Post Final fit for %d - %d\n", icand, end);
+#ifdef DEBUG_FINAL_FIT
+      dprintf("Post Final fit for %d - %d\n", icand, end);
       for (int i = icand; i < end; ++i) {
-        const TrackCand &t = eoccs[i][0];
-        printf(
-            "  %4d with q=%+d chi2=%7.3f pT=%7.3f eta=% 7.3f x=%.3f y=%.3f z=%.3f nHits=%2d  label=%4d findable=%d\n",
-            i,
-            t.charge(),
-            t.chi2(),
-            t.pT(),
-            t.momEta(),
-            t.x(),
-            t.y(),
-            t.z(),
-            t.nFoundHits(),
-            t.label(),
-            t.isFindable());
+        dprint_tcand(eoccs[i][0], i);
       }
 #endif
     }

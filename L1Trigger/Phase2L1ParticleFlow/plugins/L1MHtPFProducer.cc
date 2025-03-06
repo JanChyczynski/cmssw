@@ -43,16 +43,16 @@ void L1MhtPfProducer::produce(edm::StreamID, edm::Event& iEvent, const edm::Even
   // Get the jets from the event
   l1t::PFJetCollection edmJets = iEvent.get(jetsToken);
 
+  std::vector<l1ct::Jet> hwJets = convertEDMToHW(edmJets);  // convert to the emulator format
   // Apply pT and eta selections
-  l1t::PFJetCollection edmJetsFiltered;
-  std::copy_if(edmJets.begin(), edmJets.end(), std::back_inserter(edmJetsFiltered), [&](auto jet) {
-    return jet.pt() > minJetPt && std::abs(jet.eta()) < maxJetEta;
+  std::vector<l1ct::Jet> hwJetsFiltered;
+  std::copy_if(hwJets.begin(), hwJets.end(), std::back_inserter(hwJetsFiltered), [&](auto jet) {
+    return jet.hwPt > l1ct::Scales::makePtFromFloat(minJetPt) &&
+           std::abs(jet.hwEta) < l1ct::Scales::makeGlbEta(maxJetEta);
   });
 
-  // Run the emulation
-  std::vector<l1ct::Jet> hwJets = convertEDMToHW(edmJetsFiltered);  // convert to the emulator format
-  l1ct::Sum hwSums = htmht(hwJets);                                 // call the emulator
-  std::vector<l1t::EtSum> edmSums = convertHWToEDM(hwSums);         // convert back to edm format
+  l1ct::Sum hwSums = htmht(hwJetsFiltered);                  // call the emulator
+  std::vector<l1t::EtSum> edmSums = convertHWToEDM(hwSums);  // convert back to edm format
 
   // Put the sums in the event
   std::unique_ptr<std::vector<l1t::EtSum>> mhtCollection(new std::vector<l1t::EtSum>(0));
@@ -65,7 +65,7 @@ void L1MhtPfProducer::produce(edm::StreamID, edm::Event& iEvent, const edm::Even
 std::vector<l1ct::Jet> L1MhtPfProducer::convertEDMToHW(std::vector<l1t::PFJet> edmJets) const {
   std::vector<l1ct::Jet> hwJets;
   std::for_each(edmJets.begin(), edmJets.end(), [&](l1t::PFJet jet) {
-    l1ct::Jet hwJet = l1ct::Jet::unpack(jet.encodedJet());
+    l1ct::Jet hwJet = l1ct::Jet::unpack(jet.getHWJetCT());
     hwJets.push_back(hwJet);
   });
   return hwJets;
@@ -75,17 +75,18 @@ std::vector<l1t::EtSum> L1MhtPfProducer::convertHWToEDM(l1ct::Sum hwSums) const 
   std::vector<l1t::EtSum> edmSums;
 
   reco::Candidate::PolarLorentzVector htVector;
-  htVector.SetPt(hwSums.hwSumPt.to_double());
+  l1gt::Sum gtSum = hwSums.toGT();
+  htVector.SetPt(l1gt::Scales::floatPt(gtSum.scalar_pt));
   htVector.SetPhi(0);
   htVector.SetEta(0);
 
   reco::Candidate::PolarLorentzVector mhtVector;
-  mhtVector.SetPt(hwSums.hwPt.to_double());
-  mhtVector.SetPhi(l1ct::Scales::floatPhi(hwSums.hwPhi));
+  mhtVector.SetPt(l1gt::Scales::floatPt(gtSum.vector_pt));
+  mhtVector.SetPhi(l1gt::Scales::floatPhi(gtSum.vector_phi));
   mhtVector.SetEta(0);
 
-  l1t::EtSum ht(htVector, l1t::EtSum::EtSumType::kTotalHt);
-  l1t::EtSum mht(mhtVector, l1t::EtSum::EtSumType::kMissingHt);
+  l1t::EtSum ht(htVector, l1t::EtSum::EtSumType::kTotalHt, gtSum.scalar_pt.bits_to_uint64());
+  l1t::EtSum mht(mhtVector, l1t::EtSum::EtSumType::kMissingHt, gtSum.vector_pt.bits_to_uint64(), 0, gtSum.vector_phi);
 
   edmSums.push_back(ht);
   edmSums.push_back(mht);

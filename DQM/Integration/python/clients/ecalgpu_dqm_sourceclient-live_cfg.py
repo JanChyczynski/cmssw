@@ -4,15 +4,13 @@ import sys
 from Configuration.Eras.Era_Run3_cff import Run3
 process = cms.Process("process", Run3)
 
-unitTest = False
-if 'unitTest=True' in sys.argv:
-    unitTest=True
+unitTest = 'unitTest=True' in sys.argv
 
 ### Load cfis ###
 
 if unitTest:
-    process.load("DQM.Integration.config.unittestinputsource_cfi")
-    from DQM.Integration.config.unittestinputsource_cfi import options
+    process.load("DQM.Integration.config.unitteststreamerinputsource_cfi")
+    from DQM.Integration.config.unitteststreamerinputsource_cfi import options
 else:
     process.load("DQM.Integration.config.inputsource_cfi")
     from DQM.Integration.config.inputsource_cfi import options
@@ -58,7 +56,11 @@ process.maxEvents = cms.untracked.PSet(
 process.preScaler.prescaleFactor = 1
 
 if not options.inputFiles:
-    process.source.streamLabel = cms.untracked.string("streamDQMGPUvsCPU")
+    # stream label
+    if process.runType.getRunType() == process.runType.hi_run:
+        process.source.streamLabel = "streamHIDQMGPUvsCPU"
+    else:
+        process.source.streamLabel = "streamDQMGPUvsCPU"
 
 process.dqmEnv.subSystemFolder = 'Ecal'
 process.dqmSaver.tag = 'EcalGPU'
@@ -67,6 +69,7 @@ process.dqmSaverPB.tag = 'EcalGPU'
 process.dqmSaverPB.runNumber = options.runNumber
 
 process.ecalGpuTask.params.runGpuTask = True
+process.ecalGpuTask.params.enableRecHit = False
 process.ecalMonitorTask.workers = ['GpuTask']
 process.ecalMonitorTask.workerParameters = cms.untracked.PSet(GpuTask = process.ecalGpuTask)
 process.ecalMonitorTask.verbosity = 0
@@ -76,22 +79,17 @@ process.ecalMonitorTask.commonParameters.onlineMode = True
 # ecalMonitorTask always looks for EcalRawData collection when running, even when not in use
 # Default value is cms.untracked.InputTag("ecalDigis")
 # Tag is changed below to avoid multiple warnings per event
-process.ecalMonitorTask.collectionTags.EcalRawData = cms.untracked.InputTag("hltEcalDigisLegacy")
+process.ecalMonitorTask.collectionTags.EcalRawData = cms.untracked.InputTag("hltEcalDigisSerialSync")
 
 # Streams used for online GPU validation
-process.ecalMonitorTask.collectionTags.EBCpuDigi = cms.untracked.InputTag("hltEcalDigisLegacy", "ebDigis")
-process.ecalMonitorTask.collectionTags.EECpuDigi = cms.untracked.InputTag("hltEcalDigisLegacy", "eeDigis")
-process.ecalMonitorTask.collectionTags.EBGpuDigi = cms.untracked.InputTag("hltEcalDigisFromGPU", "ebDigis")
-process.ecalMonitorTask.collectionTags.EEGpuDigi = cms.untracked.InputTag("hltEcalDigisFromGPU", "eeDigis")
-process.ecalMonitorTask.collectionTags.EBCpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitLegacy", "EcalUncalibRecHitsEB")
-process.ecalMonitorTask.collectionTags.EECpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitLegacy", "EcalUncalibRecHitsEE")
-process.ecalMonitorTask.collectionTags.EBGpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitFromSoA", "EcalUncalibRecHitsEB")
-process.ecalMonitorTask.collectionTags.EEGpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitFromSoA", "EcalUncalibRecHitsEE")
-# RecHit GPU collection tags are temp placeholder
-process.ecalMonitorTask.collectionTags.EBCpuRecHit = cms.untracked.InputTag("hltEcalRecHitWithoutTPs", "EcalRecHitsEB")
-process.ecalMonitorTask.collectionTags.EECpuRecHit = cms.untracked.InputTag("hltEcalRecHitWithoutTPs", "EcalRecHitsEE")
-process.ecalMonitorTask.collectionTags.EBGpuRecHit = cms.untracked.InputTag("hltEcalRecHitWithTPs", "EcalRecHitsEB")
-process.ecalMonitorTask.collectionTags.EEGpuRecHit = cms.untracked.InputTag("hltEcalRecHitWithTPs", "EcalRecHitsEE")
+process.ecalMonitorTask.collectionTags.EBCpuDigi = cms.untracked.InputTag("hltEcalDigisSerialSync", "ebDigis")
+process.ecalMonitorTask.collectionTags.EECpuDigi = cms.untracked.InputTag("hltEcalDigisSerialSync", "eeDigis")
+process.ecalMonitorTask.collectionTags.EBGpuDigi = cms.untracked.InputTag("hltEcalDigis", "ebDigis")
+process.ecalMonitorTask.collectionTags.EEGpuDigi = cms.untracked.InputTag("hltEcalDigis", "eeDigis")
+process.ecalMonitorTask.collectionTags.EBCpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitSerialSync", "EcalUncalibRecHitsEB")
+process.ecalMonitorTask.collectionTags.EECpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHitSerialSync", "EcalUncalibRecHitsEE")
+process.ecalMonitorTask.collectionTags.EBGpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHit", "EcalUncalibRecHitsEB")
+process.ecalMonitorTask.collectionTags.EEGpuUncalibRecHit = cms.untracked.InputTag("hltEcalUncalibRecHit", "EcalUncalibRecHitsEE")
 
 ### Paths ###
 

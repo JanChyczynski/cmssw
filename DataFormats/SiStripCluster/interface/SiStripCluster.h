@@ -38,7 +38,7 @@ public:
       firstStrip_ |= mergedValueMask;  // if this is a candidate merged cluster
   }
 
-  SiStripCluster(const SiStripApproximateCluster cluster);
+  SiStripCluster(const SiStripApproximateCluster cluster, const uint16_t maxStrips);
 
   // extend the cluster
   template <typename Iter>
@@ -82,6 +82,10 @@ public:
    */
   int charge() const;
 
+  bool filter() const;
+
+  bool isFromApprox() const;
+
   /** Test (set) the merged status of the cluster
    *
    */
@@ -99,6 +103,7 @@ private:
   //these are used if amplitude information is not available (using approximate cluster constructor)
   float barycenter_ = 0;
   int charge_ = 0;
+  bool filter_ = false;
 
   // ggiurgiu@fnal.gov, 01/05/12
   // Add cluster errors to be used by rechits from split clusters.

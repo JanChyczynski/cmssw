@@ -108,10 +108,12 @@ private:
   edm::EDGetTokenT<L1GlobalTriggerReadoutRecord> gtToken_;
   edm::EDGetTokenT<reco::CaloJetCollection> caloJetsToken_;
   edm::EDGetTokenT<reco::PFJetCollection> pfJetsToken_;
+  edm::EDGetTokenT<reco::PFJetCollection> puppiJetsToken_;
 
   edm::EDGetTokenT<reco::PFMETCollection> pfMetToken_;
   edm::EDGetTokenT<reco::CaloMETCollection> caloMetToken_;
   edm::EDGetTokenT<pat::METCollection> patMetToken_;
+  edm::EDGetTokenT<reco::PFMETCollection> puppiMetToken_;
 
   edm::EDGetTokenT<reco::MuonCollection> MuonsToken_;
   edm::EDGetTokenT<pat::JetCollection> patJetsToken_;
@@ -209,6 +211,7 @@ private:
   MonitorElement* mPt_1;
   MonitorElement* mPt_2;
   MonitorElement* mPt_3;
+  MonitorElement* mPt_log;
   MonitorElement* mEta;
   MonitorElement* mPhi;
   MonitorElement* mPt_uncor;
@@ -785,6 +788,7 @@ private:
   bool isCaloJet_;
   bool isPFJet_;
   bool isMiniAODJet_;
+  bool isPUPPIJet_;
 
   bool fill_jet_high_level_histo;
 

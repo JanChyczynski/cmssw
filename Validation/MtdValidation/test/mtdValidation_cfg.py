@@ -10,7 +10,13 @@ process.load('Configuration.EventContent.EventContent_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 
-process.load("Configuration.Geometry.GeometryExtended2026D88Reco_cff")
+process.load("Configuration.Geometry.GeometryExtended2026D98Reco_cff")
+process.load('Configuration.StandardSequences.MagneticField_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+from Configuration.AlCa.GlobalTag import GlobalTag
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase2_realistic_T21', '')
+process.load('RecoLocalFastTime.FTLClusterizer.MTDCPEESProducer_cfi')
+process.load("Configuration.StandardSequences.Reconstruction_cff")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
@@ -21,7 +27,7 @@ process.options.numberOfConcurrentLuminosityBlocks = 0
 process.options.eventSetup.numberOfConcurrentIOVs = 1
 
 process.MessageLogger.cerr.FwkReport  = cms.untracked.PSet(
-    reportEvery = cms.untracked.int32(100),
+    reportEvery = cms.untracked.int32(10),
 )
 
 process.source = cms.Source("PoolSource",
@@ -47,6 +53,7 @@ etlValidation = cms.Sequence(process.etlSimHitsValid + process.etlDigiHitsValid 
 
 # --- Global Validation
 process.load("Validation.MtdValidation.mtdTracksValid_cfi")
+process.load("Validation.MtdValidation.mtdEleIsoValid_cfi")
 process.load("Validation.MtdValidation.vertices4DValid_cfi")
 
 # process.btlDigiHitsValid.optionalPlots = True
@@ -56,7 +63,7 @@ process.load("Validation.MtdValidation.vertices4DValid_cfi")
 # process.mtdTracksValid.optionalPlots = True
 # process.vertices4DValid.optionalPlots = True
 
-process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.vertices4DValid)
+process.validation = cms.Sequence(btlValidation + etlValidation + process.mtdTracksValid + process.mtdEleIsoValid + process.vertices4DValid)
 
 process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     dataset = cms.untracked.PSet(
@@ -68,7 +75,7 @@ process.DQMoutput = cms.OutputModule("DQMRootOutputModule",
     splitLevel = cms.untracked.int32(0)
 )
 
-process.p = cms.Path( process.mix + process.validation )
+process.p = cms.Path( process.mix + process.mtdTrackingRecHits + process.validation )
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.DQMoutput_step = cms.EndPath( process.DQMoutput )
 

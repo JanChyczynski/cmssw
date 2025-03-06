@@ -79,7 +79,7 @@ def recoGeoLoad(score):
        versionCheck(options.version)
        process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
        from Configuration.AlCa.autoCond import autoCond
-       process.GlobalTag.globaltag = autoCond['run2_mc']
+       process.GlobalTag.globaltag = autoCond['phase2_realistic']
        process.load('Configuration.Geometry.GeometryExtended2026'+options.version+'Reco_cff')
        
     elif score == "MaPSA":
@@ -98,10 +98,10 @@ def recoGeoLoad(score):
        process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff") 
        from Configuration.AlCa.autoCond import autoCond
        process.GlobalTag.globaltag = autoCond['mc']
-       process.load('Geometry.HGCalCommonData.hgcalV6ParametersInitialization_cfi')
-       process.load('Geometry.HGCalCommonData.hgcalV6NumberingInitialization_cfi')
-       process.load('Geometry.CaloEventSetup.HGCalV6Topology_cfi')
-       process.load('Geometry.HGCalGeometry.HGCalV6GeometryESProducer_cfi')
+       process.load('Geometry.HGCalTBCommonData.hgcalTBParametersInitialization_cfi')
+       process.load('Geometry.HGCalTBCommonData.hgcalTBNumberingInitialization_cfi')
+       process.load('Geometry.CaloEventSetup.HGCalTBTopology_cfi')
+       process.load('Geometry.HGCalGeometry.HGCalTBGeometryESProducer_cfi')
        process.load('Geometry.CaloEventSetup.CaloTopology_cfi')
        process.load('Geometry.CaloEventSetup.CaloGeometryBuilder_cfi')
        process.CaloGeometryBuilder = cms.ESProducer(

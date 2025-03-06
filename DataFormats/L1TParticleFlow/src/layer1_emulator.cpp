@@ -34,14 +34,14 @@ bool l1ct::EmCaloObjEmu::write(std::fstream& to) const { return writeObj<EmCaloO
 
 bool l1ct::TkObjEmu::read(std::fstream& from) {
   src = nullptr;  // not persistent
-  return readObj<TkObj>(from, *this) && readVar(from, hwChi2) && readVar(from, hwStubs) && readVar(from, simPt) &&
-         readVar(from, simCaloEta) && readVar(from, simCaloPhi) && readVar(from, simVtxEta) &&
-         readVar(from, simVtxPhi) && readVar(from, simZ0) && readVar(from, simD0);
+  return readObj<TkObj>(from, *this) && readVar(from, hwChi2) && readVar(from, simPt) && readVar(from, simCaloEta) &&
+         readVar(from, simCaloPhi) && readVar(from, simVtxEta) && readVar(from, simVtxPhi) && readVar(from, simZ0) &&
+         readVar(from, simD0);
 }
 bool l1ct::TkObjEmu::write(std::fstream& to) const {
-  return writeObj<TkObj>(*this, to) && writeVar(hwChi2, to) && writeVar(hwStubs, to) && writeVar(simPt, to) &&
-         writeVar(simCaloEta, to) && writeVar(simCaloPhi, to) && writeVar(simVtxEta, to) && writeVar(simVtxPhi, to) &&
-         writeVar(simZ0, to) && writeVar(simD0, to);
+  return writeObj<TkObj>(*this, to) && writeVar(hwChi2, to) && writeVar(simPt, to) && writeVar(simCaloEta, to) &&
+         writeVar(simCaloPhi, to) && writeVar(simVtxEta, to) && writeVar(simVtxPhi, to) && writeVar(simZ0, to) &&
+         writeVar(simD0, to);
 }
 
 bool l1ct::MuObjEmu::read(std::fstream& from) {
@@ -77,7 +77,7 @@ bool l1ct::PuppiObjEmu::write(std::fstream& to) const { return writeObj<PuppiObj
 
 bool l1ct::EGIsoObjEmu::read(std::fstream& from) {
   srcCluster = nullptr;  // not persistent
-  sta_idx = -1;
+  src_idx = -1;
   clearIsoVars();  // not persistent
   return readObj<EGIsoObj>(from, *this);
 }
@@ -87,7 +87,7 @@ bool l1ct::EGIsoObjEmu::write(std::fstream& to) const { return writeObj<EGIsoObj
 bool l1ct::EGIsoEleObjEmu::read(std::fstream& from) {
   srcCluster = nullptr;
   srcTrack = nullptr;
-  sta_idx = -1;
+  src_idx = -1;
   clearIsoVars();  // not persistent
   return readObj<EGIsoEleObj>(from, *this);
 }

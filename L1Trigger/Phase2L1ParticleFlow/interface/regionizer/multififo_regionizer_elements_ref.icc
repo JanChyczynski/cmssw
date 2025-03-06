@@ -41,6 +41,11 @@ void l1ct::multififo_regionizer::maybe_push<l1ct::TkObjEmu>(const l1ct::TkObjEmu
 template <typename T>
 void l1ct::multififo_regionizer::RegionBuffer<T>::initFifos(unsigned int nfifos) {
   assert(nfifos_ == 0);
+  bool isGood =
+      (nfifos == 1 || nfifos == 2 || nfifos == 3 || nfifos == 4 || nfifos == 6 || nfifos == 8 || nfifos == 12);
+  if (!isGood) {
+    dbgCerr() << "Error, created regionizer for nfifos == " << nfifos << ", not supported." << std::endl;
+  }
   nfifos_ = nfifos;
   fifos_.resize(nfifos);
   unsigned int nmerged = nfifos;
@@ -53,10 +58,7 @@ void l1ct::multififo_regionizer::RegionBuffer<T>::initFifos(unsigned int nfifos)
     for (auto& t : queues_.back().second)
       t.clear();
   }
-  if (!(nfifos == 1 || nfifos == 2 || nfifos == 4 || nfifos == 6 || nfifos == 8 || nfifos == 12)) {
-    dbgCerr() << "Error, created regionizer for nfifos == " << nfifos << ", not supported." << std::endl;
-  }
-  assert(nfifos == 1 || nfifos == 2 || nfifos == 4 || nfifos == 6 || nfifos == 8 || nfifos == 12);
+  assert(isGood);
 }
 
 template <typename T>
@@ -79,7 +81,7 @@ void l1ct::multififo_regionizer::RegionBuffer<T>::maybe_push(int fifo, const T& 
 
 template <typename T>
 T l1ct::multififo_regionizer::RegionBuffer<T>::pop() {
-  if (nfifos_ <= 2)  // probably works for 3 as well, but not tested
+  if (nfifos_ <= 3)
     return pop_next_trivial_();
   assert(!queues_.empty());
   for (unsigned int istep = 0, nsteps = queues_.size(); istep < nsteps; ++istep) {

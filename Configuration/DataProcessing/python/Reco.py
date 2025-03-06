@@ -11,7 +11,7 @@ import os
 import sys
 
 from Configuration.DataProcessing.Scenario import *
-from Configuration.DataProcessing.Utils import stepALCAPRODUCER,stepSKIMPRODUCER,addMonitoring,dictIO,dqmIOSource,harvestingMode,dqmSeq,gtNameAndConnect
+from Configuration.DataProcessing.Utils import stepALCAPRODUCER,stepSKIMPRODUCER,addMonitoring,dictIO,dqmIOSource,harvestingMode,dqmSeq,nanoFlavours,gtNameAndConnect
 import FWCore.ParameterSet.Config as cms
 from Configuration.DataProcessing.RecoTLR import customisePrompt,customiseExpress
 
@@ -61,14 +61,19 @@ class Reco(Scenario):
 
         miniAODStep = ''
         nanoAODStep = ''
+        if not 'customs' in	args:
+            args['customs']= []
 
         if 'outputs' in args:
-            print(args['outputs']) 
+            print(args['outputs'])
             for a in args['outputs']:
                 if a['dataTier'] == 'MINIAOD':
-                    miniAODStep = ',PAT' 
+                    miniAODStep = ',PAT'
                 if a['dataTier'] in ['NANOAOD', 'NANOEDMAOD']:
-                    nanoAODStep = ',NANO' 
+                    nanoAODStep = ',NANO'
+                    if "nanoFlavours" in args:
+                        nanoAODStep += nanoFlavours(args['nanoFlavours'])
+                    args['customs'].append('PhysicsTools/NanoAOD/nano_cff.nanoL1TrigObjCustomize')
 
         self._checkRepackedFlag(options, **args)
 

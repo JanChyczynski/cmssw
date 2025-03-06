@@ -6,6 +6,7 @@
 
 #ifdef CMSSW_GIT_HASH
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
 #endif
 
 l1ct::PFAlgoEmulatorBase::~PFAlgoEmulatorBase() {}
@@ -41,6 +42,14 @@ void l1ct::PFAlgoEmulatorBase::loadPtErrBins(const edm::ParameterSet &iConfig) {
   for (auto &v : resol.getParameter<std::vector<double>>("offset"))
     offs.push_back(v);
   loadPtErrBins(absetas.size(), &absetas[0], &scales[0], &offs[0]);
+}
+
+void l1ct::PFAlgoEmulatorBase::addCaloResolutionParameterSetDescription(edm::ParameterSetDescription &to) {
+  edm::ParameterSetDescription description;
+  description.add<std::vector<double>>("etaBins");
+  description.add<std::vector<double>>("offset");
+  description.add<std::vector<double>>("scale");
+  to.add<edm::ParameterSetDescription>("caloResolution", description);
 }
 
 #endif
@@ -81,7 +90,7 @@ void l1ct::PFAlgoEmulatorBase::pfalgo_mu_ref(const PFInputRegion &in, OutputRegi
   for (unsigned int im = 0; im < nMU; ++im) {
     if (in.muon[im].hwPt > 0) {
       int ibest = -1;
-      pt_t dptmin = in.muon[im].hwPt >> 1;
+      pt_t dptmin = (in.muon[im].hwPt << 1) + in.muon[im].hwPt;
       for (unsigned int it = 0; it < nTRACK; ++it) {
         if (!in.track[it].isPFLoose())
           continue;

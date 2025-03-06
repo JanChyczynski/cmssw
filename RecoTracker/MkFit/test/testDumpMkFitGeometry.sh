@@ -7,4 +7,5 @@ if [ "${SCRAM_TEST_NAME}" != "" ] ; then
   cd ${SCRAM_TEST_NAME}
 fi
 
-(cmsRun ${LOCAL_TEST_DIR}/dumpMkFitGeometry.py) || die "failed to run dumpMkFitGeometry.py" $?
+(cmsRun ${SCRAM_TEST_PATH}/dumpMkFitGeometry.py) || die "failed to run dumpMkFitGeometry.py" $?
+(cmsRun ${SCRAM_TEST_PATH}/dumpMkFitGeometryPhase2.py) || die "failed to run dumpMkFitGeometryPhase2.py" $?

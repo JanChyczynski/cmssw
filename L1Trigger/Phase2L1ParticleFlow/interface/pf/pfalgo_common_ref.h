@@ -2,19 +2,15 @@
 #define PFALGO_COMMON_REF_H
 
 #include "DataFormats/L1TParticleFlow/interface/layer1_emulator.h"
-
-#ifdef CMSSW_GIT_HASH
 #include "pfalgo_types.h"
-#else
-#include "../firmware/pfalgo_types.h"
-#endif
 
 #include <algorithm>
 #include <vector>
 
 namespace edm {
   class ParameterSet;
-}
+  class ParameterSetDescription;
+}  // namespace edm
 
 namespace l1ct {
 
@@ -43,6 +39,7 @@ namespace l1ct {
     void loadPtErrBins(
         unsigned int nbins, const float absetas[], const float scales[], const float offs[], bool verbose = false);
     void loadPtErrBins(const edm::ParameterSet& iConfig);
+    static void addCaloResolutionParameterSetDescription(edm::ParameterSetDescription& to);
 
     void setDebug(bool debug = true) { debug_ = debug; }
 

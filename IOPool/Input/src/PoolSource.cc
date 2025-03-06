@@ -121,6 +121,10 @@ namespace edm {
           //now make sure this is marked as not dropped else the product will not be 'get'table from the Event
           auto itFound = fullList.find(item.first);
           if (itFound != fullList.end()) {
+            // If the branch in primary file was dropped, need to initilize the dictionary information
+            if (itFound->second.dropped()) {
+              itFound->second.initFromDictionary();
+            }
             itFound->second.setDropped(false);
           }
         }
@@ -187,11 +191,9 @@ namespace edm {
       if (found) {
         std::shared_ptr<RunAuxiliary> secondaryAuxiliary = secondaryFileSequence_->readRunAuxiliary_();
         checkConsistency(runPrincipal.aux(), *secondaryAuxiliary);
-        secondaryRunPrincipal_ = std::make_shared<RunPrincipal>(secondaryAuxiliary,
-                                                                secondaryFileSequence_->fileProductRegistry(),
-                                                                processConfiguration(),
-                                                                nullptr,
-                                                                runPrincipal.index());
+        secondaryRunPrincipal_ = std::make_shared<RunPrincipal>(
+            secondaryFileSequence_->fileProductRegistry(), processConfiguration(), nullptr, runPrincipal.index());
+        secondaryRunPrincipal_->setAux(*secondaryAuxiliary);
         secondaryFileSequence_->readRun_(*secondaryRunPrincipal_);
         checkHistoryConsistency(runPrincipal, *secondaryRunPrincipal_);
         runPrincipal.recombine(*secondaryRunPrincipal_, branchIDsToReplace_[InRun]);
@@ -258,15 +260,15 @@ namespace edm {
     return true;
   }
 
-  InputSource::ItemType PoolSource::getNextItemType() {
+  InputSource::ItemTypeInfo PoolSource::getNextItemType() {
     RunNumber_t run = IndexIntoFile::invalidRun;
     LuminosityBlockNumber_t lumi = IndexIntoFile::invalidLumi;
     EventNumber_t event = IndexIntoFile::invalidEvent;
     InputSource::ItemType itemType = primaryFileSequence_->getNextItemType(run, lumi, event);
-    if (secondaryFileSequence_ && (IsSynchronize != state())) {
-      if (itemType == IsRun || itemType == IsLumi || itemType == IsEvent) {
+    if (secondaryFileSequence_ && (ItemType::IsSynchronize != state())) {
+      if (itemType == ItemType::IsRun || itemType == ItemType::IsLumi || itemType == ItemType::IsEvent) {
         if (!secondaryFileSequence_->containedInCurrentFile(run, lumi, event)) {
-          return IsSynchronize;
+          return ItemType::IsSynchronize;
         }
       }
     }

@@ -41,7 +41,6 @@
 /*** Records for ESWatcher ***/
 #include "Geometry/Records/interface/IdealGeometryRecord.h"
 #include "Geometry/Records/interface/PTrackerParametersRcd.h"
-#include "Geometry/Records/interface/PTrackerAdditionalParametersPerDetRcd.h"
 #include "Geometry/Records/interface/TrackerTopologyRcd.h"
 #include "Geometry/Records/interface/TrackerDigiGeometryRecord.h"
 
@@ -65,6 +64,8 @@ private:  //===================================================================
   void bookHistograms(DQMStore::IBooker&);
 
   void fillStatusHisto(MonitorElement* statusHisto);
+
+  void fillStatusHistoHG(MonitorElement* statusHisto);
 
   void fillExpertHistos();
 
@@ -96,10 +97,10 @@ private:  //===================================================================
   const edm::ESGetToken<TrackerTopology, TrackerTopologyRcd> tTopoToken_;
   const edm::ESGetToken<GeometricDet, IdealGeometryRecord> gDetToken_;
   const edm::ESGetToken<PTrackerParameters, PTrackerParametersRcd> ptpToken_;
-  const edm::ESGetToken<PTrackerAdditionalParametersPerDet, PTrackerAdditionalParametersPerDetRcd> ptitpToken_;
   const edm::ESGetToken<AlignPCLThresholdsHG, AlignPCLThresholdsHGRcd> aliThrToken_;
   const edm::ESGetToken<TrackerGeometry, TrackerDigiGeometryRecord> geomToken_;
 
+  const std::string outputFolder_;
   const edm::ParameterSet mpReaderConfig_;
   std::unique_ptr<AlignableTracker> tracker_;
   std::unique_ptr<MillePedeFileReader> mpReader_;
@@ -129,6 +130,7 @@ private:  //===================================================================
   MonitorElement* statusResults;
   MonitorElement* binariesAvalaible;
   MonitorElement* exitCode;
+  MonitorElement* isVetoed;
 
   bool isHG_;
 };

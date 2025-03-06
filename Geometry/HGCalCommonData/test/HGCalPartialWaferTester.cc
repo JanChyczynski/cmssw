@@ -98,18 +98,21 @@ void HGCalPartialWaferTester::analyze(const edm::Event&, const edm::EventSetup& 
         edm::LogVerbatim("HGCalGeom") << "\n\nPartial Type " << partialType << " Orientation " << orientation
                                       << " Wafer " << waferU << ":" << waferV << " in layer " << layer << " at "
                                       << xy.first << ":" << xy.second << "\n\n";
-        int nCells = (type == 0) ? HGCSiliconDetId::HGCalFineN : HGCSiliconDetId::HGCalCoarseN;
+        int nCells = (type == 0) ? HGCSiliconDetId::HGCalHighDensityN : HGCSiliconDetId::HGCalLowDensityN;
         for (int i = 0; i < nTrials_; i++) {
           int ui = std::floor(nCells * 0.0002 * (rand() % 10000));
           int vi = std::floor(nCells * 0.0002 * (rand() % 10000));
           if ((ui < 2 * nCells) && (vi < 2 * nCells) && ((vi - ui) < nCells) && ((ui - vi) <= nCells) &&
               HGCalWaferMask::goodCell(ui, vi, partialType)) {
             ++alltry;
-            auto xy = hgdc.locateCell(layer, waferU, waferV, ui, vi, reco, all, norot, debug1);
+            double zpos = hgdc.waferZ(layer, reco);
+            int zside = (zpos > 0) ? 1 : -1;
+            auto xy = hgdc.locateCell(zside, layer, waferU, waferV, ui, vi, reco, all, norot, debug1);
             int lay(layer), cU(0), cV(0), wType(-1), wU(0), wV(0);
             double wt(0);
             hgdc.waferFromPosition(HGCalParameters::k_ScaleToDDD * xy.first,
                                    HGCalParameters::k_ScaleToDDD * xy.second,
+                                   zside,
                                    lay,
                                    wU,
                                    wV,
