@@ -373,12 +373,13 @@ namespace cond {
     bool printIOVSequenceDiagnostics(const IOVProxyData &iovProxyData,
                                   cond::Time_t lowerGroup,
                                   cond::Time_t higherGroup) {
-      if (iovProxyData.tagInfo.payloadType != "BeamSpotOnlineObjects") { //TODO remove
-        return false;
-      }
+      // if (iovProxyData.tagInfo.payloadType != "BeamSpotOnlineObjects") { //TODO remove
+      //   return false;
+      // }
 
       std::ostringstream s;
       s << "Fetched new IOV for '" << iovProxyData.tagInfo.name << "'\n" 
+        << "payload type: " << iovProxyData.tagInfo.payloadType << "\n"
         << "request interval [ " << lowerGroup << " , " << higherGroup << " ]\n" 
         << "new range [ " << iovProxyData.groupLowerIov << " , " << iovProxyData.groupHigherIov << " ]\n"
         << "#entries " << iovProxyData.iovSequence.size() << "\n"
@@ -431,10 +432,11 @@ namespace cond {
       // std::exit(0);  //TODO DEBUG To avoid long exection of unrelated code after diagnostics got printed
 
       //TODO
-      if(true) {
-        edm::LogSystem("NewIOV") << "In IOVProxy before diagnostics: \n" //TODO remove
-                                  << "payloadType: " << m_data->tagInfo.payloadType << "\n" 
-                                  << "IOVProxy m_printDebug: " << m_printDebug << std::endl;
+      if(m_printDebug) {
+        // edm::LogSystem("NewIOV") << "In IOVProxy before diagnostics: \n" //TODO remove
+        //                           << "payloadType: " << m_data->tagInfo.payloadType << "\n" 
+        //                           << "tag: " << m_data->tagInfo.name << "\n" 
+        //                           << "IOVProxy m_printDebug: " << m_printDebug << std::endl;
         if (printIOVSequenceDiagnostics(*m_data, lowerGroup, higherGroup)) {
           //TODO make sure this is only in debug mode
           std::exit(0);  //To avoid long exection of unrelated code after diagnostics got printed
