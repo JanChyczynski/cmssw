@@ -140,7 +140,7 @@ options.register('minBetaStar',  0.1
                      If the value is outside of this range the payload is not uploaded""")
 options.register('maxBetaStar',  100.
                 , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
-                , """duringFill only: [meters] min value of the range of valid values.
+                , """duringFill only: [meters] max value of the range of valid values.
                      If the value is outside of this range the payload is not uploaded""")
 options.register('minCrossingAngle',  10.
                 , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
@@ -148,7 +148,7 @@ options.register('minCrossingAngle',  10.
                      If the value is outside of this range the payload is not uploaded""")
 options.register('maxCrossingAngle',  500.
                 , VarParsing.VarParsing.multiplicity.singleton, VarParsing.VarParsing.varType.float
-                , """duringFill only: [urad] min value of the range of valid values.
+                , """duringFill only: [urad] max value of the range of valid values.
                      If the value is outside of this range the payload is not uploaded""")
 
 # as the previous options, so far there was no need to use option, added just in case

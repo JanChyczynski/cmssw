@@ -204,6 +204,8 @@ LHCInfoPerFillPopConSourceHandler::LHCInfoPerFillPopConSourceHandler(edm::Parame
       m_ecalConnectionString(pset.getUntrackedParameter<std::string>("ecalConnectionString", "")),
       m_authpath(pset.getUntrackedParameter<std::string>("authenticationPath", "")),
       m_omsBaseUrl(pset.getUntrackedParameter<std::string>("omsBaseUrl", "")),
+      m_minEnergy(pset.getUntrackedParameter<double>("minEnergy", 450.)),
+      m_maxEnergy(pset.getUntrackedParameter<double>("maxEnergy", 8000.)),
       m_fillPayload(),
       m_prevPayload(),
       m_tmpBuffer() {
@@ -220,6 +222,34 @@ LHCInfoPerFillPopConSourceHandler::LHCInfoPerFillPopConSourceHandler(edm::Parame
 }
 
 void LHCInfoPerFillPopConSourceHandler::getNewObjects() {
+  populateIovs();
+  if (!m_endFillMode) {  // duringFill mode
+    filterInvalidPayloads();
+  }
+}
+
+void LHCInfoPerFillPopConSourceHandler::filterInvalidPayloads() {
+  // note: at the moment used only in duringFill mode so the m_iovs is quaranteed to have size() <= 1
+  // but iterating through the whole map is implemented just in case the way it's used changes
+  auto it = m_iovs.begin();
+  while (it != m_iovs.end()) {
+    std::stringstream payloadData;
+    payloadData << "Fill = " << it->second->fillNumber() << ", Energy = " << it->second->energy();
+    if (!isPayloadValid(*(it->second))) {
+      edm::LogWarning(m_name) << "Skipping upload of payload with invalid values: " << payloadData.str();
+      m_iovs.erase(it++);  // note: post-increment necessary to avoid using invalidated iterators
+    } else {
+      edm::LogInfo(m_name) << "Payload to be uploaded: " << payloadData.str();
+      ++it;
+    }
+  }
+}
+
+bool LHCInfoPerFillPopConSourceHandler::isPayloadValid(const LHCInfoPerFill& payload) const {
+  return (m_minEnergy <= payload.energy() && payload.energy() <= m_maxEnergy);
+}
+
+void LHCInfoPerFillPopConSourceHandler::populateIovs() {
   //if a new tag is created, transfer fake fill from 1 to the first fill for the first time
   if (tagInfo().size == 0) {
     edm::LogInfo(m_name) << "New tag " << tagInfo().name << "; from " << m_name << "::getNewObjects";

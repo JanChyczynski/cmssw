@@ -36,6 +36,9 @@ private:
                    const boost::posix_time::ptime& upperTime);
 
 private:
+  void populateIovs();
+  void filterInvalidPayloads();
+  bool isPayloadValid(const LHCInfoPerFill& payload) const;
   bool m_debug;
   // starting date for sampling
   boost::posix_time::ptime m_startTime;
@@ -46,6 +49,10 @@ private:
   std::string m_connectionString, m_ecalConnectionString;
   std::string m_authpath;
   std::string m_omsBaseUrl;
+
+  float m_minEnergy; // [GeV], applicable in duringFill mode only
+  float m_maxEnergy; // [GeV], applicable in duringFill mode only 
+
   std::unique_ptr<LHCInfoPerFill> m_fillPayload;
   std::shared_ptr<LHCInfoPerFill> m_prevPayload;
   std::vector<std::pair<cond::Time_t, std::shared_ptr<LHCInfoPerFill>>> m_tmpBuffer;
