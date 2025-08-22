@@ -204,6 +204,7 @@ LHCInfoPerFillPopConSourceHandler::LHCInfoPerFillPopConSourceHandler(edm::Parame
       m_ecalConnectionString(pset.getUntrackedParameter<std::string>("ecalConnectionString", "")),
       m_authpath(pset.getUntrackedParameter<std::string>("authenticationPath", "")),
       m_omsBaseUrl(pset.getUntrackedParameter<std::string>("omsBaseUrl", "")),
+      // m_defaultEnergy(pset.getUntrackedParameter<double>("defaultEnergy", 6800.)), //TODO remove if not used
       m_minEnergy(pset.getUntrackedParameter<double>("minEnergy", 450.)),
       m_maxEnergy(pset.getUntrackedParameter<double>("maxEnergy", 8000.)),
       m_fillPayload(),
@@ -236,7 +237,8 @@ void LHCInfoPerFillPopConSourceHandler::filterInvalidPayloads() {
     std::stringstream payloadData;
     payloadData << "Fill = " << it->second->fillNumber() << ", Energy = " << it->second->energy();
     if (!isPayloadValid(*(it->second))) {
-      edm::LogWarning(m_name) << "Skipping upload of payload with invalid values: " << payloadData.str();
+      throw cms::Exception("LHCInfoPerFillPopConSourceHandler")
+            << "Skipping upload of payload with invalid values: " << payloadData.str();  // TODO rename? refactor?
       m_iovs.erase(it++);  // note: post-increment necessary to avoid using invalidated iterators
     } else {
       edm::LogInfo(m_name) << "Payload to be uploaded: " << payloadData.str();
@@ -264,12 +266,13 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
   cond::Time_t lastSince = tagInfo().lastInterval.since;
   if (tagInfo().isEmpty()) {
-    // for a new or empty tag in endFill mode, an empty payload should be added on top with since=1
-    addEmptyPayload(1);
-    lastSince = 1;
-    if (!m_endFillMode) {
-      edm::LogInfo(m_name) << "Empty or new tag: uploading a default payload and ending the job";
-      return;
+    if (m_endFillMode) {
+      // for a new or empty tag in endFill mode, an empty payload should be added on top with since=1
+      addEmptyPayload(1);
+      lastSince = 1;
+    } else {
+       // in duringFizll mode, we don't upload empty payloads to the empty tag
+      lastSince = 0; // in duringFill mode, this value is not used when the tag is empty
     }
   } else {
     edm::LogInfo(m_name) << "The last Iov in tag " << tagInfo().name << " valid since " << lastSince << "from "
@@ -302,7 +305,7 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
   cond::Time_t startTimestamp = m_startTime.is_not_a_date_time() ? 0 : cond::time::from_boost(m_startTime);
   cond::Time_t nextFillSearchTimestamp =
-      std::max(startTimestamp, m_endFillMode ? lastSince : m_prevPayload->createTime());
+      std::max(startTimestamp, m_endFillMode ? lastSince : (m_prevPayload ? m_prevPayload->createTime() : 0)); //MARK
 
   edm::LogInfo(m_name) << "Starting sampling at "
                        << boost::posix_time::to_simple_string(cond::time::to_boost(nextFillSearchTimestamp));
@@ -323,7 +326,7 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
     edm::LogInfo(m_name) << "Searching new fill after " << boost::posix_time::to_simple_string(nextFillSearchTime);
     query->filterNotNull("start_stable_beam").filterNotNull("fill_number");
-    if (nextFillSearchTime > cond::time::to_boost(m_prevPayload->createTime())) {
+    if (nextFillSearchTime > cond::time::to_boost(m_prevPayload ? m_prevPayload->createTime() : 0)) {  //MARK
       query->filterGE("start_time", nextFillSearchTime);
     } else {
       query->filterGT("start_time", nextFillSearchTime);
@@ -380,14 +383,11 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
             << "More than 1 payload buffered for writing in duringFill mode.\
           In this mode only up to 1 payload can be written";
       } else if (m_tmpBuffer.size() == 1) {
-        if (theLHCInfoPerFillImpl::comparePayloads(*(m_tmpBuffer.begin()->second), *m_prevPayload)) {
+        if (m_prevPayload && theLHCInfoPerFillImpl::comparePayloads(*(m_tmpBuffer.begin()->second), *m_prevPayload)) {
           m_tmpBuffer.clear();
           edm::LogInfo(m_name)
               << "The buffered payload has the same data as the previous payload in the tag. It will not be written.";
         }
-      } else if (m_tmpBuffer.empty()) {
-        addEmptyPayload(
-            cond::lhcInfoHelper::getFillLastLumiIOV(oms, lhcFill));  //the IOV doesn't matter when using OnlinePopCon
       }
       // In duringFill mode, convert the timestamp-type IOVs to lumiid-type IOVs
       // before transferring the payloads from the buffer to the final collection
@@ -435,6 +435,11 @@ void LHCInfoPerFillPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
                          << boost::posix_time::to_iso_extended_string(cond::time::to_boost(iov)) << " )";
   }
 }
+
+// TODO remove if not used
+// void LHCInfoPerFillPopConSourceHandler::addDefaultPayload(cond::Time_t iov, unsigned short fill) {
+//   // 
+// }
 
 // Add payload to buffer and store corresponding lumiid IOV in m_timestampToLumiid map
 void LHCInfoPerFillPopConSourceHandler::addPayloadToBuffer(cond::OMSServiceResultRef& row) {

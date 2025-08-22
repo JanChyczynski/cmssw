@@ -50,6 +50,7 @@ private:
   std::string m_authpath;
   std::string m_omsBaseUrl;
 
+  float m_defaultEnergy; // [GeV], applicable in duringFill mode only
   float m_minEnergy; // [GeV], applicable in duringFill mode only
   float m_maxEnergy; // [GeV], applicable in duringFill mode only 
 
