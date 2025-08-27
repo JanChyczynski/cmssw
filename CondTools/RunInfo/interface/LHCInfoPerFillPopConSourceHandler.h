@@ -12,6 +12,8 @@ public:
   std::string id() const override;
 
 private:
+  std::unique_ptr<LHCInfoPerFill> findFillToProcess(cond::OMSService& oms,
+                                                    const boost::posix_time::ptime& nextFillSearchTime);
   void addEmptyPayload(cond::Time_t iov);
 
   // Add payload to buffer and store corresponding lumiid IOV in m_timestampToLumiid map
@@ -50,9 +52,9 @@ private:
   std::string m_authpath;
   std::string m_omsBaseUrl;
 
-  float m_defaultEnergy; // [GeV], applicable in duringFill mode only
-  float m_minEnergy; // [GeV], applicable in duringFill mode only
-  float m_maxEnergy; // [GeV], applicable in duringFill mode only 
+  float m_defaultEnergy;  // [GeV], applicable in duringFill mode only
+  float m_minEnergy;      // [GeV], applicable in duringFill mode only
+  float m_maxEnergy;      // [GeV], applicable in duringFill mode only
 
   std::unique_ptr<LHCInfoPerFill> m_fillPayload;
   std::shared_ptr<LHCInfoPerFill> m_prevPayload;

@@ -110,6 +110,33 @@ namespace theLHCInfoPerFillImpl {
     }
     return ret;
   }
+
+  //TODO remove
+  //   cond::OMSServiceResult mockOmsQueryResult(){
+  //     // Create a mock OMSServiceResult with predefined data
+  //     cond::OMSServiceResult result;
+  //     // create omsServiceResult with mock data
+  //     // For example, adding a single row with dummy data
+  //     cond::OMSServiceResultRef row = std::make_shared<cond::OMSServiceResultRow>();
+  //     row->set<unsigned short>("fill_number", 1234);
+  //     row->set<unsigned short>("bunches_beam1", 100);
+  //     row->set<unsigned short>("bunches_beam2", 100);
+  //     row->set<unsigned short>("bunches_colliding", 80);
+  //     row->set<unsigned short>("bunches_target", 60);
+  //     row->set<LHCInfoPerFill::FillType>("fill_type_runtime", LHCInfoPerFill::PROTON);
+  //     row->set<LHCInfoPerFill::ParticleType>("fill_type_party1", LHCInfoPerFill::PROTON);
+  //     row->set<LHCInfoPerFill::ParticleType>("fill_type_party2", LHCInfoPerFill::PROTON);
+  //     row->set<float>("intensity_beam1", 1.0);
+  //     row->set<float>("intensity_beam2", 1.0);
+  //     row->set<float>("energy", 6500.0);
+  //     row->set<boost::posix_time::ptime>("start_time", boost::posix_time::microsec_clock::universal_time());
+  //     row->set<boost::posix_time::ptime>("start_stable_beam", boost::posix_time::microsec_clock::universal_time());
+  //     row->set<std::string>("end_time", "null");
+  //     row->set<std::string>("injection_scheme", "standard");
+  //     result.push_back(row);
+  //     return result;
+  //   }
+
 }  // namespace theLHCInfoPerFillImpl
 
 namespace theLHCInfoPerFillImpl {
@@ -238,7 +265,7 @@ void LHCInfoPerFillPopConSourceHandler::filterInvalidPayloads() {
     payloadData << "Fill = " << it->second->fillNumber() << ", Energy = " << it->second->energy();
     if (!isPayloadValid(*(it->second))) {
       throw cms::Exception("LHCInfoPerFillPopConSourceHandler")
-            << "Skipping upload of payload with invalid values: " << payloadData.str();  // TODO rename? refactor?
+          << "Skipping upload of payload with invalid values: " << payloadData.str();  // TODO rename? refactor?
       m_iovs.erase(it++);  // note: post-increment necessary to avoid using invalidated iterators
     } else {
       edm::LogInfo(m_name) << "Payload to be uploaded: " << payloadData.str();
@@ -271,8 +298,8 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
       addEmptyPayload(1);
       lastSince = 1;
     } else {
-       // in duringFizll mode, we don't upload empty payloads to the empty tag
-      lastSince = 0; // in duringFill mode, this value is not used when the tag is empty
+      // in duringFizll mode, we don't upload empty payloads to the empty tag
+      lastSince = 0;  // in duringFill mode, this value is not used when the tag is empty
     }
   } else {
     edm::LogInfo(m_name) << "The last Iov in tag " << tagInfo().name << " valid since " << lastSince << "from "
@@ -305,7 +332,7 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
   cond::Time_t startTimestamp = m_startTime.is_not_a_date_time() ? 0 : cond::time::from_boost(m_startTime);
   cond::Time_t nextFillSearchTimestamp =
-      std::max(startTimestamp, m_endFillMode ? lastSince : (m_prevPayload ? m_prevPayload->createTime() : 0)); //MARK
+      std::max(startTimestamp, m_endFillMode ? lastSince : (m_prevPayload ? m_prevPayload->createTime() : 0));
 
   edm::LogInfo(m_name) << "Starting sampling at "
                        << boost::posix_time::to_simple_string(cond::time::to_boost(nextFillSearchTimestamp));
@@ -322,26 +349,10 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
     cond::OMSService oms;
     oms.connect(m_omsBaseUrl);
-    auto query = oms.query("fills");
 
-    edm::LogInfo(m_name) << "Searching new fill after " << boost::posix_time::to_simple_string(nextFillSearchTime);
-    query->filterNotNull("start_stable_beam").filterNotNull("fill_number");
-    if (nextFillSearchTime > cond::time::to_boost(m_prevPayload ? m_prevPayload->createTime() : 0)) {  //MARK
-      query->filterGE("start_time", nextFillSearchTime);
-    } else {
-      query->filterGT("start_time", nextFillSearchTime);
-    }
+    m_fillPayload = findFillToProcess(oms, nextFillSearchTime);
 
-    query->filterLT("start_time", m_endTime);
-    if (m_endFillMode)
-      query->filterNotNull("end_time");
-    else
-      query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
-
-    bool foundFill = query->execute();
-    if (foundFill)
-      foundFill = theLHCInfoPerFillImpl::makeFillPayload(m_fillPayload, query->result());
-    if (!foundFill) {
+    if (!m_fillPayload) {
       edm::LogInfo(m_name) << "No fill found - END of job.";
       break;
     }
@@ -416,6 +427,32 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 
 std::string LHCInfoPerFillPopConSourceHandler::id() const { return m_name; }
 
+std::unique_ptr<LHCInfoPerFill> LHCInfoPerFillPopConSourceHandler::findFillToProcess(
+    cond::OMSService& oms, const boost::posix_time::ptime& nextFillSearchTime) {
+  oms.connect(m_omsBaseUrl);
+  auto query = oms.query("fills");
+
+  edm::LogInfo(m_name) << "Searching new fill after " << boost::posix_time::to_simple_string(nextFillSearchTime);
+  query->filterNotNull("start_stable_beam").filterNotNull("fill_number");
+  if (nextFillSearchTime > cond::time::to_boost(m_prevPayload ? m_prevPayload->createTime() : 0)) {
+    query->filterGE("start_time", nextFillSearchTime);
+  } else {
+    query->filterGT("start_time", nextFillSearchTime);
+  }
+
+  query->filterLT("start_time", m_endTime);
+  if (m_endFillMode)
+    query->filterNotNull("end_time");
+  else
+    query->filterEQ("end_time", cond::OMSServiceQuery::SNULL);
+
+  bool foundFill = query->execute();
+  std::unique_ptr<LHCInfoPerFill> fillToBeProcessedPayload;
+  if (foundFill)
+    foundFill = theLHCInfoPerFillImpl::makeFillPayload(fillToBeProcessedPayload, query->result());
+  return fillToBeProcessedPayload;
+}
+
 void LHCInfoPerFillPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
   bool add = false;
   if (m_iovs.empty()) {
@@ -438,7 +475,7 @@ void LHCInfoPerFillPopConSourceHandler::addEmptyPayload(cond::Time_t iov) {
 
 // TODO remove if not used
 // void LHCInfoPerFillPopConSourceHandler::addDefaultPayload(cond::Time_t iov, unsigned short fill) {
-//   // 
+//   //
 // }
 
 // Add payload to buffer and store corresponding lumiid IOV in m_timestampToLumiid map
