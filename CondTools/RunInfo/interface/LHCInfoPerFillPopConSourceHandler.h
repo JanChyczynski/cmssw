@@ -11,6 +11,8 @@ public:
   void getNewObjects() override;
   std::string id() const override;
 
+  bool isPayloadValid(const LHCInfoPerFill& payload) const;
+
 private:
   std::unique_ptr<LHCInfoPerFill> findFillToProcess(cond::OMSService& oms,
                                                     const boost::posix_time::ptime& nextFillSearchTime);
@@ -36,11 +38,10 @@ private:
   bool getEcalData(cond::persistency::Session& session,
                    const boost::posix_time::ptime& lowerTime,
                    const boost::posix_time::ptime& upperTime);
-
+                   
 private:
   void populateIovs();
   void filterInvalidPayloads();
-  bool isPayloadValid(const LHCInfoPerFill& payload) const;
   bool m_debug;
   // starting date for sampling
   boost::posix_time::ptime m_startTime;

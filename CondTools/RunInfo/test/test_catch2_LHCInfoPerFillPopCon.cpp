@@ -5,10 +5,9 @@
 #include "CondTools/RunInfo/interface/LHCInfoPerFillPopConSourceHandler.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-
-TEST_CASE("LHCInfoPerFillPopConSourceHandler instantiation", "[LHCInfoPerFillPopConSourceHandler]") {
+// Helper function to create a default ParameterSet
+edm::ParameterSet createDefaultPSet() {
     edm::ParameterSet pset;
-    // based on the default values in the src/CondTools/RunInfo/python/LHCInfoPerFillPopConAnalyzer_cfg.py add arguements
     pset.addUntrackedParameter<bool>("debug", false);
     pset.addUntrackedParameter<std::string>("startTime", "2023-01-01 00:00:00");
     pset.addUntrackedParameter<std::string>("endTime", "2023-12-31 23:59:59");
@@ -20,6 +19,38 @@ TEST_CASE("LHCInfoPerFillPopConSourceHandler instantiation", "[LHCInfoPerFillPop
     pset.addUntrackedParameter<std::string>("omsBaseUrl", "https://oms.cern.ch/cern/oms");
     pset.addUntrackedParameter<double>("minEnergy", 450.0);
     pset.addUntrackedParameter<double>("maxEnergy", 8000.0); 
+    return pset;
+}
+
+TEST_CASE("LHCInfoPerFillPopConSourceHandler.isPayloadValid works", "[isPayloadValid]") {
+    edm::ParameterSet pset = createDefaultPSet();
     LHCInfoPerFillPopConSourceHandler handler(pset);
-    REQUIRE(true);
+
+    LHCInfoPerFill payload;
+
+    SECTION("Energy within range is valid") {
+        payload.setEnergy(6500.0);
+        CHECK(handler.isPayloadValid(payload) == true);
+    }
+
+    SECTION("Energy at lower bound is valid") {
+        payload.setEnergy(450.0);
+        CHECK(handler.isPayloadValid(payload) == true);
+    }
+
+    SECTION("Energy at upper bound is valid") {
+        payload.setEnergy(8000.0);
+        CHECK(handler.isPayloadValid(payload) == true);
+    }
+
+    SECTION("Energy below range is invalid") {
+        payload.setEnergy(400.0);
+        CHECK(handler.isPayloadValid(payload) == false);
+    }
+
+    SECTION("Energy above range is invalid") {
+        payload.setEnergy(8500.0);
+        CHECK(handler.isPayloadValid(payload) == false);
+    }
+
 }
