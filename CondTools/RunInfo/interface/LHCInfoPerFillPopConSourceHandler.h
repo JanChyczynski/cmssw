@@ -13,7 +13,7 @@ public:
 
   bool isPayloadValid(const LHCInfoPerFill& payload) const;
 
-private:
+protected:
   std::unique_ptr<LHCInfoPerFill> findFillToProcess(cond::OMSService& oms,
                                                     const boost::posix_time::ptime& nextFillSearchTime);
   void addEmptyPayload(cond::Time_t iov);
@@ -39,7 +39,7 @@ private:
                    const boost::posix_time::ptime& lowerTime,
                    const boost::posix_time::ptime& upperTime);
                    
-private:
+protected:
   void populateIovs();
   void filterInvalidPayloads();
   bool m_debug;
