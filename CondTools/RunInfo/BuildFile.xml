@@ -1,3 +1,5 @@
+<flags CXXFLAGS="-O0 -g -fsanitize=undefined"/>
+<!-- <flags CXXFLAGS="-O0 -g"/> -->
 <use name="CondCore/CondDB"/>
 <use name="CondCore/DBOutputService"/>
 <use name="CondCore/PopCon"/>

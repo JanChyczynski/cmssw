@@ -298,7 +298,7 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
       addEmptyPayload(1);
       lastSince = 1;
     } else {
-      // in duringFizll mode, we don't upload empty payloads to the empty tag
+      // in duringFill mode, we don't upload empty payloads to the empty tag
       lastSince = 0;  // in duringFill mode, this value is not used when the tag is empty
     }
   } else {
@@ -350,7 +350,8 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
     cond::OMSService oms;
     oms.connect(m_omsBaseUrl);
 
-    m_fillPayload = findFillToProcess(oms, nextFillSearchTime);
+    bool inclusiveSearchTime = nextFillSearchTime > cond::time::to_boost(m_prevPayload ? m_prevPayload->createTime() : 0);
+    m_fillPayload = findFillToProcess(oms, nextFillSearchTime, inclusiveSearchTime);
 
     if (!m_fillPayload) {
       edm::LogInfo(m_name) << "No fill found - END of job.";
@@ -428,13 +429,13 @@ void LHCInfoPerFillPopConSourceHandler::populateIovs() {
 std::string LHCInfoPerFillPopConSourceHandler::id() const { return m_name; }
 
 std::unique_ptr<LHCInfoPerFill> LHCInfoPerFillPopConSourceHandler::findFillToProcess(
-    cond::OMSService& oms, const boost::posix_time::ptime& nextFillSearchTime) {
+    cond::OMSService& oms, const boost::posix_time::ptime& nextFillSearchTime, bool inclusiveSearchTime) {
   oms.connect(m_omsBaseUrl);
   auto query = oms.query("fills");
 
   edm::LogInfo(m_name) << "Searching new fill after " << boost::posix_time::to_simple_string(nextFillSearchTime);
   query->filterNotNull("start_stable_beam").filterNotNull("fill_number");
-  if (nextFillSearchTime > cond::time::to_boost(m_prevPayload ? m_prevPayload->createTime() : 0)) {
+  if (inclusiveSearchTime) {
     query->filterGE("start_time", nextFillSearchTime);
   } else {
     query->filterGT("start_time", nextFillSearchTime);
@@ -510,10 +511,11 @@ void LHCInfoPerFillPopConSourceHandler::convertBufferedIovsToLumiid(
   }
 }
 
-size_t LHCInfoPerFillPopConSourceHandler::getLumiData(const cond::OMSService& oms,
-                                                      unsigned short fillId,
-                                                      const boost::posix_time::ptime& beginFillTime,
-                                                      const boost::posix_time::ptime& endFillTime) {
+std::tuple<cond::OMSServiceResult, bool, std::unique_ptr<cond::OMSServiceQuery> > LHCInfoPerFillPopConSourceHandler::executeLumiQuery(
+  const cond::OMSService& oms,
+  unsigned short fillId,
+  const boost::posix_time::ptime& beginFillTime,
+  const boost::posix_time::ptime& endFillTime) const {
   auto query = oms.query("lumisections");
   query->addOutputVars(
       {"start_time", "delivered_lumi", "recorded_lumi", "beams_stable", "run_number", "lumisection_number"});
@@ -521,22 +523,43 @@ size_t LHCInfoPerFillPopConSourceHandler::getLumiData(const cond::OMSService& om
   query->filterGT("start_time", beginFillTime).filterLT("start_time", endFillTime);
   query->filterEQ("beams_stable", "true");
   query->limit(cond::lhcInfoHelper::kLumisectionsQueryLimit);
-  if (query->execute()) {
-    auto queryResult = query->result();
-    edm::LogInfo(m_name) << "Found " << queryResult.size() << " lumisections with STABLE BEAM during the fill "
-                         << fillId;
 
-    if (!queryResult.empty()) {
-      if (m_endFillMode) {
-        auto firstRow = queryResult.front();
-        addPayloadToBuffer(firstRow);
-      }
-
-      auto lastRow = queryResult.back();
-      addPayloadToBuffer(lastRow);
-    }
+  bool executed = query->execute();
+  if (executed) {
+    return std::make_tuple(query->result(), true, std::move(query));
+  } else {
+    return std::make_tuple(cond::OMSServiceResult(), false, std::move(query));
   }
-  return 0;
+}
+
+void LHCInfoPerFillPopConSourceHandler::getLumiData(const cond::OMSService& oms,
+                                                      unsigned short fillId,
+                                                      const boost::posix_time::ptime& beginFillTime,
+                                                      const boost::posix_time::ptime& endFillTime) {
+
+  auto [queryResult, success, query] = executeLumiQuery(oms, fillId, beginFillTime, endFillTime);
+  if (!success) {
+    edm::LogError(m_name) << "Failed to execute luminosity query.";
+    return;
+  }
+  edm::LogInfo(m_name) << "Found " << queryResult.size() << " lumisections with STABLE BEAM during the fill "
+                        << fillId;
+
+  if (queryResult.empty()) {
+    edm::LogWarning(m_name) << "No lumisections with STABLE BEAM found during the fill " << fillId
+                            << ". No payload will be added to buffer for writing.";
+    return;
+  }
+
+  if (m_endFillMode) {
+      auto firstRow = queryResult.front();
+      addPayloadToBuffer(firstRow);
+  }
+
+  auto lastRow = queryResult.back();
+  addPayloadToBuffer(lastRow);
+
+  return;
 }
 
 void LHCInfoPerFillPopConSourceHandler::getDipData(const cond::OMSService& oms,

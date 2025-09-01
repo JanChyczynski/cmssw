@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CondCore/PopCon/interface/PopConSourceHandler.h"
 #include "CondFormats/RunInfo/interface/LHCInfoPerFill.h"
 #include "CondTools/RunInfo/interface/OMSAccess.h"
@@ -15,14 +17,21 @@ public:
 
 protected:
   std::unique_ptr<LHCInfoPerFill> findFillToProcess(cond::OMSService& oms,
-                                                    const boost::posix_time::ptime& nextFillSearchTime);
+                                                    const boost::posix_time::ptime& nextFillSearchTime,
+                                                    bool inclusiveSearchTime);
   void addEmptyPayload(cond::Time_t iov);
 
   // Add payload to buffer and store corresponding lumiid IOV in m_timestampToLumiid map
   void addPayloadToBuffer(cond::OMSServiceResultRef& row);
   void convertBufferedIovsToLumiid(std::map<cond::Time_t, cond::Time_t> timestampToLumiid);
 
-  size_t getLumiData(const cond::OMSService& oms,
+  std::tuple<cond::OMSServiceResult, bool, std::unique_ptr<cond::OMSServiceQuery> > executeLumiQuery(
+    const cond::OMSService& oms,
+    unsigned short fillId,
+    const boost::posix_time::ptime& beginFillTime,
+    const boost::posix_time::ptime& endFillTime) const;
+
+  void getLumiData(const cond::OMSService& oms,
                      unsigned short fillId,
                      const boost::posix_time::ptime& beginFillTime,
                      const boost::posix_time::ptime& endFillTime);
