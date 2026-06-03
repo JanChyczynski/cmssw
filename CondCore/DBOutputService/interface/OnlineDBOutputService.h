@@ -41,6 +41,8 @@ namespace cond {
         cond::Time_t targetTime =
             cond::time::lumiTime(unpkLastTime.first, unpkLastTime.second + m_latencyInLumisections);
         auto t0 = std::chrono::high_resolution_clock::now();
+        //log info about the size of the payload
+        logger().logInfo() << "Payload size is " << sizeof(payload) << " bytes.";
         logger().logInfo() << "Updating lumisection " << targetTime;
         cond::Hash payloadId = PoolDBOutputService::writeOneIOV<PayloadType>(payload, targetTime, recordName);
         PoolDBOutputService::commitTransaction();
