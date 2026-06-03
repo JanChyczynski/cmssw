@@ -3,6 +3,9 @@
 #include "CondCore/CondDB/interface/DecodingKey.h"
 #include "SessionImpl.h"
 
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
+
+#include <chrono>
 #include <memory>
 
 #include "DbConnectionString.h"
@@ -30,7 +33,10 @@ namespace cond {
       std::shared_ptr<coral::ISessionProxy> m_session;
     };
 
-    SessionImpl::SessionImpl() : coralSession() {}
+    SessionImpl::SessionImpl() : coralSession() {
+      sessionStartTime = std::chrono::high_resolution_clock::now();
+      sessionTimingActive = true;
+    }
 
     SessionImpl::SessionImpl(std::shared_ptr<coral::ISessionProxy>& session,
                              const std::string& connectionStr,
@@ -38,6 +44,8 @@ namespace cond {
         : coralSession(session), sessionHash(""), connectionString(connectionStr), principalName(principalNm) {
       cond::auth::KeyGenerator kg;
       sessionHash = kg.make(cond::auth::COND_SESSION_HASH_SIZE);
+      sessionStartTime = std::chrono::high_resolution_clock::now();
+      sessionTimingActive = true;
     }
 
     SessionImpl::~SessionImpl() { close(); }
@@ -51,6 +59,13 @@ namespace cond {
           startTransaction(false);
           releaseTagLocks();
           commitTransaction();
+        }
+        if (sessionTimingActive) {
+          auto sessionStopTime = std::chrono::high_resolution_clock::now();
+          auto sessionLatency =
+              std::chrono::duration_cast<std::chrono::microseconds>(sessionStopTime - sessionStartTime).count();
+          edm::LogInfo("CondDB") << "Session " << sessionHash << " lasted " << sessionLatency << " microsecs.";
+          sessionTimingActive = false;
         }
         coralSession.reset();
       }
@@ -67,6 +82,8 @@ namespace cond {
         gtSchemaHandle = std::make_unique<GTSchema>(coralSession->nominalSchema());
         runInfoSchemaHandle = std::make_unique<RunInfoSchema>(coralSession->nominalSchema());
         transaction = std::make_unique<CondDBTransaction>(coralSession);
+        transactionStartTime = std::chrono::high_resolution_clock::now();
+        transactionTimingActive = true;
       } else {
         if (!readOnly)
           throwException("An update transaction is already active.", "SessionImpl::startTransaction");
@@ -81,7 +98,19 @@ namespace cond {
       if (transaction) {
         transaction->clients--;
         if (!transaction->clients) {
+          auto transactionBeforeCommitTime = std::chrono::high_resolution_clock::now();
           transaction->commit();
+          if (transactionTimingActive) {
+            auto transactionStopTime = std::chrono::high_resolution_clock::now();
+            auto transactionLatency = std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime)
+                                          .count();
+            edm::LogInfo("CondDB") << "Transaction in session " << sessionHash << " took " << transactionLatency
+                                    << " microsecs.";
+            edm::LogInfo("CondDB") << "Transaction commit in session " << sessionHash << " took "
+                                    << std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionBeforeCommitTime).count()
+                                    << " microsecs.";
+            transactionTimingActive = false;
+          }
           transaction.reset();
           iovSchemaHandle.reset();
           gtSchemaHandle.reset();
@@ -94,6 +123,14 @@ namespace cond {
       std::unique_lock<std::recursive_mutex> lock;
       lock.swap(transactionLock);
       if (transaction) {
+        if (transactionTimingActive) {
+          auto transactionStopTime = std::chrono::high_resolution_clock::now();
+          auto transactionLatency = std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime)
+                                        .count();
+          edm::LogInfo("CondDB") << "Transaction in session " << sessionHash << " took " << transactionLatency
+                                  << " microsecs before rollback.";
+          transactionTimingActive = false;
+        }
         transaction->rollback();
         transaction.reset();
         iovSchemaHandle.reset();

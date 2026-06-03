@@ -9,6 +9,7 @@
 #include "RelationalAccess/ConnectionService.h"
 #include "RelationalAccess/ISessionProxy.h"
 //
+#include <chrono>
 #include <memory>
 #include <mutex>
 // temporarely
@@ -70,6 +71,10 @@ namespace cond {
       std::string sessionHash;
       std::string connectionString;
       std::string principalName;
+      std::chrono::high_resolution_clock::time_point sessionStartTime;
+      bool sessionTimingActive = false;
+      std::chrono::high_resolution_clock::time_point transactionStartTime;
+      bool transactionTimingActive = false;
       std::set<std::string> lockedTags;
       std::unique_ptr<ITransaction> transaction;
       std::unique_ptr<IIOVSchema> iovSchemaHandle;
