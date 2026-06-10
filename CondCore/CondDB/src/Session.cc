@@ -213,6 +213,15 @@ namespace cond {
       return editor;
     }
 
+    void Session::recordUploadMetrics(std::size_t serializedBytes,
+                                      std::chrono::microseconds storePayloadTime,
+                                      std::chrono::microseconds commitTime) {
+      if (m_session) {
+        m_session->recordUploadMetrics(serializedBytes, storePayloadTime);
+        m_session->totalCommitTime += commitTime;
+      }
+    }
+
     std::string Session::connectionString() { return m_session->connectionString; }
 
     coral::ISessionProxy& Session::coralSession() {

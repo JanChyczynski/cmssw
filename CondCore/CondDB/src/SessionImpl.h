@@ -73,6 +73,10 @@ namespace cond {
       std::string principalName;
       std::chrono::high_resolution_clock::time_point sessionStartTime;
       bool sessionTimingActive = false;
+      std::chrono::microseconds totalTransactionTime{0};
+      std::chrono::microseconds totalStorePayloadTime{0};
+      std::chrono::microseconds totalCommitTime{0};
+      std::size_t totalSerializedBytes{0};
       std::chrono::high_resolution_clock::time_point transactionStartTime;
       bool transactionTimingActive = false;
       std::set<std::string> lockedTags;
@@ -85,6 +89,9 @@ namespace cond {
       void releaseTagLocks();
       std::recursive_mutex transactionMutex;
       std::unique_lock<std::recursive_mutex> transactionLock;
+
+    public:
+      void recordUploadMetrics(std::size_t serializedBytes, std::chrono::microseconds storePayloadTime);
     };
 
   }  // namespace persistency

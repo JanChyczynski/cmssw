@@ -5,14 +5,14 @@ set -e
 # ----- ARGUMENTS
 MODE="endFill"
 # START="2026-05-31 15:43:20.000"
-START="2026-06-02 18:43:20.000"
+START="2026-05-28 18:43:20.000"
 END="2026-06-03 15:43:20.000"
 
-TESTNAME="writeManyOff_timev1_detailed"
-TEST_NR="2"
+TESTNAME="session_timev2_more"
+TEST_NR="2_long"
 
 LAST_LUMI_OVERRIDE="1737640688746590"
-TAG="LHCInfoPerFill_test"
+TAG="LHCInfoPerLS_test"
 
 if [ "$MODE" == "duringFill" ]; then
     TESTNAME="duringF_${TESTNAME}"

@@ -65,11 +65,25 @@ namespace cond {
           auto sessionLatency =
               std::chrono::duration_cast<std::chrono::microseconds>(sessionStopTime - sessionStartTime).count();
           edm::LogInfo("CondDB") << "Session " << sessionHash << " lasted " << sessionLatency << " microsecs.";
+          edm::LogInfo("CondDB") << "Total serialized bytes uploaded in session " << sessionHash << " were "
+                                  << totalSerializedBytes << " bytes.";
+          edm::LogInfo("CondDB") << "Total storePayload time in session " << sessionHash << " was "
+                                  << totalStorePayloadTime.count() << " microsecs.";
+          edm::LogInfo("CondDB") << "Total commit time in session " << sessionHash << " was "
+                                  << totalCommitTime.count() << " microsecs.";
+          edm::LogInfo("CondDB") << "Total transaction time in session " << sessionHash << " was "
+                                  << totalTransactionTime.count() << " microsecs.";
           sessionTimingActive = false;
         }
         coralSession.reset();
       }
       transaction.reset();
+    }
+
+    void SessionImpl::recordUploadMetrics(std::size_t serializedBytes,
+                                          std::chrono::microseconds storePayloadTime) {
+      totalSerializedBytes += serializedBytes;
+      totalStorePayloadTime += storePayloadTime;
     }
 
     bool SessionImpl::isActive() const { return coralSession.get(); }
@@ -104,6 +118,7 @@ namespace cond {
             auto transactionStopTime = std::chrono::high_resolution_clock::now();
             auto transactionLatency = std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime)
                                           .count();
+            totalTransactionTime += std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime);
             edm::LogInfo("CondDB") << "Transaction in session " << sessionHash << " took " << transactionLatency
                                     << " microsecs.";
             edm::LogInfo("CondDB") << "Transaction commit in session " << sessionHash << " took "
@@ -127,6 +142,7 @@ namespace cond {
           auto transactionStopTime = std::chrono::high_resolution_clock::now();
           auto transactionLatency = std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime)
                                         .count();
+          totalTransactionTime += std::chrono::duration_cast<std::chrono::microseconds>(transactionStopTime - transactionStartTime);
           edm::LogInfo("CondDB") << "Transaction in session " << sessionHash << " took " << transactionLatency
                                   << " microsecs before rollback.";
           transactionTimingActive = false;

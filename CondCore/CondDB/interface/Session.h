@@ -25,6 +25,7 @@
 //
 //#include <vector>
 //#include <tuple>
+#include <chrono>
 // temporarely
 
 // TO BE REMOVED AFTER THE TRANSITION
@@ -162,6 +163,10 @@ namespace cond {
 
       // runinfo write access
       RunInfoEditor editRunInfo();
+
+      void recordUploadMetrics(std::size_t serializedBytes,
+               std::chrono::microseconds storePayloadTime,
+               std::chrono::microseconds commitTime);
 
     public:
       std::string connectionString();

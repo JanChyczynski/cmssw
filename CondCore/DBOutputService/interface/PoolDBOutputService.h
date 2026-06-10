@@ -108,13 +108,9 @@ namespace cond {
       void writeMany(const std::map<Time_t, std::shared_ptr<T> >& iovAndPayloads, const std::string& recordName) {
         if (iovAndPayloads.empty())
           return;
-        std::size_t payloadSize = 0;
-        for (const auto& iovEntry : iovAndPayloads) {
-          payloadSize += sizeof(*iovEntry.second);
-        }
-        auto t0 = std::chrono::high_resolution_clock::now();
-        m_logger.logInfo() << "Uploading " << iovAndPayloads.size() << " payloads with total size " << payloadSize
-                           << " bytes.";
+        std::size_t serializedBytes = 0;
+        std::chrono::microseconds storePayloadTime{0};
+        m_logger.logInfo() << "Uploading " << iovAndPayloads.size() << " payloads.";
         std::lock_guard<std::recursive_mutex> lock(m_mutex);
         doStartTransaction();
         cond::persistency::TransactionScope scope(m_session.transaction());
@@ -139,9 +135,7 @@ namespace cond {
                 lastSince = 0;
             }
           }
-          auto tAfterSetup = std::chrono::high_resolution_clock::now();
-          auto setupLatency = std::chrono::duration_cast<std::chrono::microseconds>(tAfterSetup - t0).count();
-          m_logger.logInfo() << "Upload setup has taken " << setupLatency << " microsecs.";
+          // setup phase completed
           for (auto& iovEntry : iovAndPayloads) {
             Time_t time = iovEntry.first;
             auto payload = iovEntry.second;
@@ -152,19 +146,20 @@ namespace cond {
                 continue;
               }
             }
-            auto payloadHash = m_session.storePayload(*payload);
+            auto serializedPayload = cond::serialize(*payload);
+            serializedBytes += serializedPayload.first.size() + serializedPayload.second.size();
+            auto tBeforeStore = std::chrono::high_resolution_clock::now();
+            auto payloadHash = m_session.storePayloadData(cond::demangledName(typeid(T)),
+                                                          serializedPayload,
+                                                          boost::posix_time::microsec_clock::universal_time());
+            auto tAfterStore = std::chrono::high_resolution_clock::now();
+            storePayloadTime += std::chrono::duration_cast<std::chrono::microseconds>(tAfterStore - tBeforeStore);
             editor.insert(time, payloadHash);
           }
-          auto tAfterPayloadInsert = std::chrono::high_resolution_clock::now();
-          auto payloadLatency = std::chrono::duration_cast<std::chrono::microseconds>(tAfterPayloadInsert - tAfterSetup)
-                                    .count();
-          m_logger.logInfo() << "Payload upload has taken " << payloadLatency << " microsecs.";
           cond::UserLogInfo a = this->lookUpUserLogInfo(myrecord.m_idName);
           editor.flush(a.usertext);
-          auto tAfterFlush = std::chrono::high_resolution_clock::now();
-          auto flushLatency = std::chrono::duration_cast<std::chrono::microseconds>(tAfterFlush - tAfterPayloadInsert)
-                                  .count();
-          m_logger.logInfo() << "Metadata flush has taken " << flushLatency << " microsecs.";
+          m_logger.logInfo() << "Actual serialized payload size is " << serializedBytes << " bytes.";
+          m_logger.logInfo() << "storePayload time is " << storePayloadTime.count() << " microsecs.";
           if (m_autoCommit) {
             auto tBeforeCommit = std::chrono::high_resolution_clock::now();
             doCommitTransaction();
@@ -172,12 +167,14 @@ namespace cond {
             auto commitLatency = std::chrono::duration_cast<std::chrono::microseconds>(tAfterCommit - tBeforeCommit)
                                      .count();
             m_logger.logInfo() << "Commit has taken " << commitLatency << " microsecs.";
+            m_session.recordUploadMetrics(serializedBytes,
+                                          storePayloadTime,
+                                          std::chrono::duration_cast<std::chrono::microseconds>(tAfterCommit - tBeforeCommit));
           } else {
             m_logger.logInfo() << "Commit skipped because auto-commit is disabled.";
+            m_session.recordUploadMetrics(serializedBytes, storePayloadTime, std::chrono::microseconds{0});
           }
-          auto t1 = std::chrono::high_resolution_clock::now();
-          auto uploadLatency = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-          m_logger.logInfo() << "Database upload has taken " << uploadLatency << " microsecs.";
+          
         } catch (const std::exception& er) {
           cond::throwException(std::string(er.what()), "PoolDBOutputService::writeMany");
         }
