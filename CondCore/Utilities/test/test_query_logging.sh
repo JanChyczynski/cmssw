@@ -31,6 +31,7 @@ PAYLOAD_NUMBER="1"
 TEST_EXECUTIONS="1"
 
 REMOVE_FAKE_DBS="true"
+DELETE_DEST_SQLITE="false"
 
 RUN_TIME="$(date +%Y-%m-%d-%Hh%Mm%S)"
 CSV_HEADER_WRITTEN="false"
@@ -107,6 +108,9 @@ Options:
   --keep-fake-dbs
       Do not delete fake source DBs at the end.
 
+  --delete-dest-sqlite
+      Delete destination SQLite DB files at the end of each execution.
+
   -h, --help
       Show this help message.
 
@@ -172,6 +176,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --keep-fake-dbs)
             REMOVE_FAKE_DBS="false"
+            shift
+            ;;
+        --delete-dest-sqlite)
+            DELETE_DEST_SQLITE="true"
             shift
             ;;
         -h|--help)
@@ -321,6 +329,18 @@ append_csv() {
     fi
 }
 
+remove_sqlite_db() {
+    local db_uri="$1"
+
+    if [[ "$db_uri" == sqlite_file:* ]]; then
+        local db_path="${db_uri#sqlite_file:}"
+        rm -f "$db_path"
+    elif [[ "$db_uri" == sqlite:* ]]; then
+        local db_path="${db_uri#sqlite:}"
+        rm -f "$db_path"
+    fi
+}
+
 # ----------------------------
 # TEST EXECUTION LOOP
 # ----------------------------
@@ -465,6 +485,22 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
     fi
 
     echo "Updated CSV file: $CSVFILE"
+
+    # ----------------------------
+    # CLEANUP DEST SQLITE DBS
+    # ----------------------------
+
+    if [ "$DELETE_DEST_SQLITE" = "true" ]; then
+        if [[ "$RUN_DEST_DB" == sqlite_file:* || "$RUN_DEST_DB" == sqlite:* ]]; then
+            remove_sqlite_db "$RUN_DEST_DB"
+            echo "Removed dest DB: $RUN_DEST_DB"
+        fi
+
+        if [ -n "$RUN_AUX_DEST_DB" ] && [[ "$RUN_AUX_DEST_DB" == sqlite_file:* || "$RUN_AUX_DEST_DB" == sqlite:* ]]; then
+            remove_sqlite_db "$RUN_AUX_DEST_DB"
+            echo "Removed aux dest DB: $RUN_AUX_DEST_DB"
+        fi
+    fi
 
 
 	# ----------------------------
