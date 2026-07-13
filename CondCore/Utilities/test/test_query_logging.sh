@@ -431,15 +431,20 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
             export TEST_CONDDB_COMM_SCHEMA="$DEST_SCHEMA"
             time conddb -v -a ~/ --yes \
                 --db "$RUN_SOURCE_DB" \
-                copy "$TAG" "PerfTest_${CAMPAIGN}" \
+                copy "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                 --destdb "$RUN_DEST_DB"
         } 2>&1 | tee -a "$DEST_LOGFILE"
+	echo "final conddb command (dest):"
+	echo "conddb -v -a ~/ --yes \
+                --db \"$RUN_SOURCE_DB\" \
+                copy \"PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}\" \
+                --destdb \"$RUN_DEST_DB\" "
         if [ -n "$RUN_AUX_DEST_DB" ]; then
             {
                 export TEST_CONDDB_COMM_SCHEMA="$AUXDEST_SCHEMA"
                 time conddb -v -a ~/ --yes \
                     --db "$RUN_SOURCE_DB" \
-                    copy "$TAG" "PerfTest_${CAMPAIGN}" \
+                    copy "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                     --destdb "$RUN_AUX_DEST_DB"
             } 2>&1 | tee -a "$AUXDEST_LOGFILE"
         fi
