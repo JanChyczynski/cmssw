@@ -390,13 +390,17 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
         PARSER_DEST_DB="sqlite:$(basename "$DEST_DB_PATH")"
     fi
 
+    PARSER_AUX_DEST_DB=""
+
     DEST_LOGFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_dest.log"
     DEST_CSVFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_dest.csv"
 
     if [ -n "$RUN_AUX_DEST_DB" ]; then
-        if [[ "$RUN_AUX_DEST_DB" == sqlite:* ]]; then
+        if [[ "$RUN_AUX_DEST_DB" == sqlite_file:* ]]; then
             AUX_DEST_DB_PATH="${RUN_AUX_DEST_DB#sqlite_file:}"
             PARSER_AUX_DEST_DB="sqlite:$(basename "$AUX_DEST_DB_PATH")"
+        else
+            PARSER_AUX_DEST_DB="$RUN_AUX_DEST_DB"
         fi
 
         AUXDEST_LOGFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_aux.log"
