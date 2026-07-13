@@ -430,7 +430,7 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
     if [ "$CREATE_PAYLOADS" = "true" ]; then
         {
             export TEST_CONDDB_COMM_SCHEMA="$DEST_SCHEMA"
-	    time conddb -v -a ~/ --yes --force \
+	    time conddb -v -a /data/ --yes --force \
                 --db "$RUN_SOURCE_DB" \
                 copy "LHCInfoPerFillFake" "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                 --note "Mock test Query time DB" \
@@ -439,7 +439,7 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
         if [ -n "$RUN_AUX_DEST_DB" ]; then
             {
 		export TEST_CONDDB_COMM_SCHEMA="$AUXDEST_SCHEMA"
-	       	time conddb -v -a ~/ --yes --force \
+	       	time conddb -v -a /data/ --yes --force \
                     --db "$RUN_SOURCE_DB" \
                     copy "LHCInfoPerFillFake" "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                     --note "Mock test Query time DB" \
@@ -449,7 +449,7 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
     else
         {
             export TEST_CONDDB_COMM_SCHEMA="$DEST_SCHEMA"
-            time conddb -v -a ~/ --yes \
+            time conddb -v -a /data/ --yes \
                 --db "$RUN_SOURCE_DB" \
                 copy "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                 --destdb "$RUN_DEST_DB"
@@ -462,7 +462,7 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
         if [ -n "$RUN_AUX_DEST_DB" ]; then
             {
                 export TEST_CONDDB_COMM_SCHEMA="$AUXDEST_SCHEMA"
-                time conddb -v -a ~/ --yes \
+                time conddb -v -a /data/ --yes \
                     --db "$RUN_SOURCE_DB" \
                     copy "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                     --destdb "$RUN_AUX_DEST_DB"
