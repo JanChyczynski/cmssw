@@ -35,7 +35,7 @@ LOG_START_RE = re.compile(
 )
 
 LOG_FILE_RE = re.compile(
-    r"^(?P<campaign>.+)_s(?P<payload_size>\d+)_n(?P<payload_number>\d+)_t(?P<test_execution>\d+)_(?P<test_time>\d{4}-\d{2}-\d{2}-\d{2}h\d{2}m\d{2})$"
+    r"^(?P<campaign>.+)_s(?P<payload_size>\d+)_n(?P<payload_number>\d+)_t(?P<test_execution>\d+)_(?P<test_time>\d{4}-\d{2}-\d{2}-\d{2}h\d{2}m\d{2})(?:_(?P<log_kind>dest|aux))?$"
 )
 
 def parse_log_file_metadata(log_path: Path) -> dict:
@@ -43,6 +43,8 @@ def parse_log_file_metadata(log_path: Path) -> dict:
     Extract metadata from filenames like:
 
         test1_s10_n5_t2_2026-07-09-19h39m48.log
+        test1_s10_n5_t2_2026-07-09-19h39m48_dest.log
+        test1_s10_n5_t2_2026-07-09-19h39m48_aux.log
 
     Result:
         campaign       = test1
@@ -56,8 +58,9 @@ def parse_log_file_metadata(log_path: Path) -> dict:
     if not match:
         raise ValueError(
             f"Log filename does not match expected format: {log_path.name}\n"
-            "Expected format: <campaign>_s<size>_n<number>_t<execution>_<YYYY-MM-DD-HHhMMmSS>.log\n"
-            "Example: test1_s10_n5_t2_2026-07-09-19h39m48.log"
+            "Expected format: <campaign>_s<size>_n<number>_t<execution>_<YYYY-MM-DD-HHhMMmSS>[_(dest|aux)].log\n"
+            "Examples: test1_s10_n5_t2_2026-07-09-19h39m48.log, "
+            "test1_s10_n5_t2_2026-07-09-19h39m48_dest.log"
         )
 
     metadata = match.groupdict()
