@@ -7,7 +7,7 @@ set -euo pipefail
 
 #
 
-CMSSW_PATH="/data/upload_test/alejandro/15_1_0_patch2_conddb_copy_logging_test/src"
+CMSSW_PATH="${CMSSW_BASE}/src"
 
 BASE_TESTSDIR="${CMSSW_PATH}/CondCore/Utilities/test/conddb_query_tests"
 PARSER="${BASE_TESTSDIR}/parser_query_logging.py"
@@ -19,9 +19,12 @@ CREATE_PAYLOADS="false"
 
 SOURCE_DB=""
 DEST_DB=""
+AUX_DEST_DB=""
 TAG=""
 
 export TEST_CONDDB_COMM_SCHEMA=cms_conditions_test
+DEST_SCHEMA="${TEST_CONDDB_COMM_SCHEMA}"
+AUXDEST_SCHEMA="${TEST_CONDDB_COMM_SCHEMA}"
 
 PAYLOAD_SIZE="10"
 PAYLOAD_NUMBER="1"
@@ -30,6 +33,7 @@ TEST_EXECUTIONS="1"
 REMOVE_FAKE_DBS="true"
 
 RUN_TIME="$(date +%Y-%m-%d-%Hh%Mm%S)"
+CSV_HEADER_WRITTEN="false"
 
 # ----------------------------
 # HELP MESSAGE
@@ -45,6 +49,11 @@ Usage:
   Fake payload mode:
     $0 --create-payloads --payload-size 5 --payload-number 10 --executions 3
 
+    Fake payload mode with sqlite dest and aux:
+        $0 --create-payloads --payload-size 1 --payload-number 2 --executions 2 \
+             --dest-db sqlite_file:/tmp/dest_{run}.db \
+             --aux-dest-db sqlite_file:/tmp/aux_{run}.db
+
 Options:
 
   --create-payloads
@@ -57,6 +66,18 @@ Options:
   --dest-db DB
       Destination DB.
       Optional. If not provided, one sqlite destination DB is created per execution.
+
+  --aux-dest-db DB
+      Auxiliary destination DB.
+      Optional. If not provided, one sqlite auxiliary destination DB is created per execution.
+
+  --dest-schema NAME
+      Schema used for the destination conddb run.
+      Default: ${DEST_SCHEMA}
+
+  --auxdest-schema NAME
+      Schema used for the auxiliary destination conddb run.
+      Default: ${AUXDEST_SCHEMA}
 
   --tag TAG
       Tag to copy.
@@ -110,8 +131,20 @@ while [[ $# -gt 0 ]]; do
             DEST_DB="$2"
             shift 2
             ;;
+        --aux-dest-db)
+            AUX_DEST_DB="$2"
+            shift 2
+            ;;
         --tag)
             TAG="$2"
+            shift 2
+            ;;
+        --dest-schema)
+            DEST_SCHEMA="$2"
+            shift 2
+            ;;
+        --auxdest-schema)
+            AUXDEST_SCHEMA="$2"
             shift 2
             ;;
         --payload-size)
@@ -235,6 +268,30 @@ make_dest_db() {
     fi
 }
 
+make_aux_dest_db() {
+    local execution="$1"
+
+    if [ -n "$AUX_DEST_DB" ]; then
+        if [[ "$AUX_DEST_DB" == *"{run}"* ]]; then
+            echo "${AUX_DEST_DB//\{run\}/${execution}}"
+        else
+            if [ "$TEST_EXECUTIONS" -gt 1 ]; then
+                if [[ "$AUX_DEST_DB" == sqlite_file:* ]]; then
+                    local path="${AUX_DEST_DB#sqlite_file:}"
+                    local base="${path%.db}"
+                    echo "sqlite_file:${base}_run${execution}.db"
+                else
+                    echo "$AUX_DEST_DB"
+                fi
+            else
+                echo "$AUX_DEST_DB"
+            fi
+        fi
+    else
+        echo "sqlite_file:${TESTDIR}/${CAMPAIGN}_auxdest_run${execution}.db"
+    fi
+}
+
 make_fake_source_db() {
     local execution="$1"
     echo "${TESTDIR}/${CAMPAIGN}_fake_source_s${PAYLOAD_SIZE}_n${PAYLOAD_NUMBER}_run${execution}.db"
@@ -243,11 +300,25 @@ make_fake_source_db() {
 run_parser() {
     local parser_source="$1"
     local parser_destination="$2"
+    local parser_glob="$3"
+    local parser_output="$4"
 
     python3 "$PARSER" "$TESTDIR" \
-        -o "$CSVFILE" \
+        -o "$parser_output" \
         --source "$parser_source" \
-        --destination "$parser_destination"
+        --destination "$parser_destination" \
+        --glob "$parser_glob"
+}
+
+append_csv() {
+    local source_csv="$1"
+
+    if [ "$CSV_HEADER_WRITTEN" = "false" ]; then
+        cat "$source_csv" > "$CSVFILE"
+        CSV_HEADER_WRITTEN="true"
+    else
+        tail -n +2 "$source_csv" >> "$CSVFILE"
+    fi
 }
 
 # ----------------------------
@@ -280,14 +351,27 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
     fi
 
     RUN_DEST_DB="$(make_dest_db "$execution")"
+    RUN_AUX_DEST_DB=""
+
+    if [ -n "$AUX_DEST_DB" ]; then
+        RUN_AUX_DEST_DB="$(make_aux_dest_db "$execution")"
+    fi
 
     if [[ "$RUN_DEST_DB" == sqlite_file:* ]]; then
         DEST_DB_FILE="${RUN_DEST_DB#sqlite_file:}"
         rm -f "$DEST_DB_FILE"
     fi
 
+    if [ -n "$RUN_AUX_DEST_DB" ] && [[ "$RUN_AUX_DEST_DB" == sqlite_file:* ]]; then
+        AUX_DEST_DB_FILE="${RUN_AUX_DEST_DB#sqlite_file:}"
+        rm -f "$AUX_DEST_DB_FILE"
+    fi
+
     echo "Source DB: $RUN_SOURCE_DB" | tee -a "$LOGFILE"
     echo "Dest DB:   $RUN_DEST_DB" | tee -a "$LOGFILE"
+    if [ -n "$RUN_AUX_DEST_DB" ]; then
+        echo "AuxDest DB: $RUN_AUX_DEST_DB" | tee -a "$LOGFILE"
+    fi
 
     PARSER_SOURCE_DB="$RUN_SOURCE_DB"
     PARSER_DEST_DB="$RUN_DEST_DB"
@@ -306,27 +390,66 @@ for execution in $(seq 1 "$TEST_EXECUTIONS"); do
         PARSER_DEST_DB="sqlite:$(basename "$DEST_DB_PATH")"
     fi
 
+    DEST_LOGFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_dest.log"
+    DEST_CSVFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_dest.csv"
+
+    if [ -n "$RUN_AUX_DEST_DB" ]; then
+        if [[ "$RUN_AUX_DEST_DB" == sqlite:* ]]; then
+            AUX_DEST_DB_PATH="${RUN_AUX_DEST_DB#sqlite_file:}"
+            PARSER_AUX_DEST_DB="sqlite:$(basename "$AUX_DEST_DB_PATH")"
+        fi
+
+        AUXDEST_LOGFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_aux.log"
+        AUXDEST_CSVFILE="${TESTDIR}/${CAMPAIGNFILEPATH}_aux.csv"
+    fi
+
     if [ "$CREATE_PAYLOADS" = "true" ]; then
         {
-            time conddb -v -a ~/ --yes --force \
+            TEST_CONDDB_COMM_SCHEMA="$DEST_SCHEMA" time conddb -v -a ~/ --yes --force \
                 --db "$RUN_SOURCE_DB" \
                 copy "LHCInfoPerFillFake" "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
                 --note "Mock test Query time DB" \
                 --destdb "$RUN_DEST_DB"
-        } 2>&1 | tee -a "$LOGFILE"
+        } 2>&1 | tee -a "$DEST_LOGFILE"
+        if [ -n "$RUN_AUX_DEST_DB" ]; then
+            {
+                TEST_CONDDB_COMM_SCHEMA="$AUXDEST_SCHEMA" time conddb -v -a ~/ --yes --force \
+                    --db "$RUN_SOURCE_DB" \
+                    copy "LHCInfoPerFillFake" "PerfTest_${CAMPAIGN}_size_${PAYLOAD_SIZE}" \
+                    --note "Mock test Query time DB" \
+                    --destdb "$RUN_AUX_DEST_DB"
+            } 2>&1 | tee -a "$AUXDEST_LOGFILE"
+        fi
     else
         {
-            time conddb -v -a ~/ --yes \
+            TEST_CONDDB_COMM_SCHEMA="$DEST_SCHEMA" time conddb -v -a ~/ --yes \
                 --db "$RUN_SOURCE_DB" \
                 copy "$TAG" "PerfTest_${CAMPAIGN}" \
                 --destdb "$RUN_DEST_DB"
-        } 2>&1 | tee -a "$LOGFILE"
+        } 2>&1 | tee -a "$DEST_LOGFILE"
+        if [ -n "$RUN_AUX_DEST_DB" ]; then
+            {
+                TEST_CONDDB_COMM_SCHEMA="$AUXDEST_SCHEMA" time conddb -v -a ~/ --yes \
+                    --db "$RUN_SOURCE_DB" \
+                    copy "$TAG" "PerfTest_${CAMPAIGN}" \
+                    --destdb "$RUN_AUX_DEST_DB"
+            } 2>&1 | tee -a "$AUXDEST_LOGFILE"
+        fi
     fi
 
-    echo "Wrote log file: $LOGFILE"
+    echo "Wrote dest log file: $DEST_LOGFILE"
+    if [ -n "$RUN_AUX_DEST_DB" ]; then
+        echo "Wrote aux log file: $AUXDEST_LOGFILE"
+    fi
 
     echo "Parsing logs after execution $execution..."
-    run_parser "$PARSER_SOURCE_DB" "$PARSER_DEST_DB"
+    run_parser "$PARSER_SOURCE_DB" "$PARSER_DEST_DB" "${CAMPAIGNFILEPATH}_dest.log" "$DEST_CSVFILE"
+    append_csv "$DEST_CSVFILE"
+
+    if [ -n "$RUN_AUX_DEST_DB" ]; then
+        run_parser "$PARSER_SOURCE_DB" "$PARSER_AUX_DEST_DB" "${CAMPAIGNFILEPATH}_aux.log" "$AUXDEST_CSVFILE"
+        append_csv "$AUXDEST_CSVFILE"
+    fi
 
     echo "Updated CSV file: $CSVFILE"
 
