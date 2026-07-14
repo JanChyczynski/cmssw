@@ -1,0 +1,16 @@
+set -euo pipefail
+
+export PYTHONNOUSERSITE="1" 
+export TEST_CONDDB_COMM_SCHEMA=cms_conditions_test
+
+for PAYLOAD_SIZE in 180000000; do
+    for PAYLOAD_NUMBER in 1 10; do
+        CAMPAIGN_NAME="conddb_copy_3D_BIG_vocms_s${PAYLOAD_SIZE}_n${PAYLOAD_NUMBER}"
+        echo "Running payload test campaign ${CAMPAIGN_NAME} with size ${PAYLOAD_SIZE} and number ${PAYLOAD_NUMBER}"
+        ./test_query_logging.sh --create-payloads --payload-size ${PAYLOAD_SIZE} --payload-number ${PAYLOAD_NUMBER} --executions 10 --dest-db oracle://CMS_CONDITIONS_TEST@cmsintr_lb --dest-schema cms_conditions_test --cmssw-path ${CMSSW_BASE}/src --campaign ${CAMPAIGN_NAME}
+        
+        echo "Running read test campaign ${CAMPAIGN_NAME} "
+        ./test_query_logging.sh --payload-size ${PAYLOAD_SIZE} --payload-number ${PAYLOAD_NUMBER} --executions 10 --source-db oracle://CMS_CONDITIONS_TEST@cmsintr_lb  --cmssw-path ${CMSSW_BASE}/src --campaign ${CAMPAIGN_NAME}  --delete-dest-sqlite
+
+    done
+done
